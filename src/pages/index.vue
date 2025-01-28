@@ -17,20 +17,36 @@
               :key="row.name"
               :style="rowStyles(index)"
             >
+              <!-- Rank -->
               <td><span style="font-size: 2em;">{{ index + 1 }}</span></td>
+
+              <!-- Ascend/Descend Indicator -->
               <td>
-                <v-icon :color="row.indicator === 'up' ? 'green' : row.indicator === 'down' ? 'red' : ''" style="font-size: 2em;">
-                  {{ row.indicator === 'up' ? 'mdi-arrow-up' : row.indicator === 'down' ? 'mdi-arrow-down' : '' }}
+                <v-icon
+                  v-if="row.indicator === 'up'"
+                  color="green"
+                  style="font-size: 2em;"
+                >
+                  mdi-arrow-up
+                </v-icon>
+                <v-icon
+                  v-else-if="row.indicator === 'down'"
+                  color="red"
+                  style="font-size: 2em;"
+                >
+                  mdi-arrow-down
                 </v-icon>
               </td>
+
+              <!-- Editable Name -->
               <td>
                 <v-text-field
                   v-if="editingRow === index"
                   v-model="row.name"
                   dense
                   outlined
-                  @blur="saveName(row, index)"
-                  @keyup.enter="saveName(row, index)"
+                  @blur="saveName(index)"
+                  @keyup.enter="saveName(index)"
                   style="font-size: 2em;"
                 ></v-text-field>
                 <span
@@ -41,7 +57,11 @@
                   {{ row.name }}
                 </span>
               </td>
+
+              <!-- Counter -->
               <td><span style="font-size: 2em;">{{ row.counter }}</span></td>
+
+              <!-- Actions -->
               <td class="text-right">
                 <v-btn small icon @click="incrementCounter(row)">
                   <v-icon>mdi-plus</v-icon>
@@ -122,31 +142,45 @@ const deleteRowIndex = ref(null);
 const editingRow = ref(null);
 const previousRanks = ref([]);
 
+// Computed property to calculate sorted rows and set indicators
 const sortedRows = computed(() => {
   const sorted = [...rows.value].sort((a, b) => b.counter - a.counter);
+
   sorted.forEach((row, index) => {
     const previousRank = previousRanks.value.findIndex((r) => r.name === row.name);
-    if (previousRank > -1) {
-      row.indicator = previousRank > index ? 'up' : previousRank < index ? 'down' : '';
+
+    if (previousRank === -1) {
+      row.indicator = ''; // New row, no change
+    } else if (previousRank > index) {
+      row.indicator = 'up'; // Ascended
+    } else if (previousRank < index) {
+      row.indicator = 'down'; // Descended
+    } else {
+      row.indicator = ''; // No change
     }
   });
-  previousRanks.value = [...sorted];
+
+  previousRanks.value = sorted.map((row) => ({ name: row.name }));
   return sorted;
 });
 
+// Row styles (sparkle effect for top rank)
 const rowStyles = (index) => {
   return index === 0 ? { backgroundColor: '#8a7724', animation: 'sparkle 1.5s infinite' } : {};
 };
 
+// Open dialog for adding a team
 const openDialog = () => {
   dialog.value = true;
 };
 
+// Close dialog
 const closeDialog = () => {
   dialog.value = false;
   newRowName.value = '';
 };
 
+// Add a new row
 const addRow = () => {
   if (newRowName.value.trim()) {
     rows.value.push({ name: newRowName.value, counter: 0, indicator: '' });
@@ -156,37 +190,43 @@ const addRow = () => {
   }
 };
 
-const saveName = (row, index) => {
+// Save changes to a name
+const saveName = (index) => {
+  const row = rows.value[index];
   if (!row.name.trim()) {
     alert("Name can't be empty");
-    editingRow.value = null;
-  } else {
-    editingRow.value = null;
+    return;
   }
+  editingRow.value = null; // Exit edit mode
 };
 
+// Increment counter
 const incrementCounter = (row) => {
   row.counter++;
 };
 
+// Decrement counter
 const decrementCounter = (row) => {
   if (row.counter > 0) {
     row.counter--;
   }
 };
 
+// Confirm delete dialog
 const confirmDelete = (row) => {
   deleteRowName.value = row.name;
   deleteRowIndex.value = rows.value.indexOf(row);
   deleteDialog.value = true;
 };
 
+// Close delete dialog
 const closeDeleteDialog = () => {
   deleteDialog.value = false;
   deleteRowIndex.value = null;
   deleteRowName.value = '';
 };
 
+// Delete a row
 const deleteRow = () => {
   rows.value.splice(deleteRowIndex.value, 1);
   closeDeleteDialog();
