@@ -29,9 +29,12 @@ app.post("/api/teams", (req, res) => {
   const { name, counter } = req.body;
   db.query(
     "INSERT INTO teams (name, counter) VALUES (?, ?)",
-    [name, counter],
+    [name, counter || 0],
     (err, results) => {
-      if (err) throw err;
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error adding team" });
+      }
       res.status(201).json({ message: "Team added successfully" });
     }
   );
@@ -58,5 +61,5 @@ app.delete("/api/teams/:id", (req, res) => {
   });
 });
 
-const PORT = 3000;
+const PORT = 5000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

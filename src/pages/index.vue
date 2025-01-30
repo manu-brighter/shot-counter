@@ -67,7 +67,7 @@ const newTeam = ref({ name: "", counter: 0 });
 
 const fetchTeams = async () => {
   try {
-    const response = await axios.get("http://localhost:3000/api/teams");
+    const response = await axios.get("http://localhost:5000/api/teams");
     teams.value = response.data;
   } catch (error) {
     console.error("Error fetching teams:", error);
@@ -80,7 +80,7 @@ const addTeam = async () => {
     return;
   }
   try {
-    await axios.post("http://localhost:3000/api/teams", newTeam.value);
+    await axios.post("http://localhost:5000/api/teams", newTeam.value);
     fetchTeams();
     closeDialog();
   } catch (error) {
@@ -90,7 +90,7 @@ const addTeam = async () => {
 
 const deleteTeam = async (id) => {
   try {
-    await axios.delete(`http://localhost:3000/api/teams/${id}`);
+    await axios.delete(`http://localhost:5000/api/teams/${id}`);
     fetchTeams();
   } catch (error) {
     console.error("Error deleting team:", error);
@@ -100,7 +100,7 @@ const deleteTeam = async (id) => {
 const incrementCounter = async (id) => {
   try {
     const team = teams.value.find((team) => team.id === id);
-    await axios.put(`http://localhost:3000/api/teams/${id}`, {
+    await axios.put(`http://localhost:5000/api/teams/${id}`, {
       ...team,
       counter: team.counter + 1,
     });
@@ -113,7 +113,7 @@ const incrementCounter = async (id) => {
 const decrementCounter = async (id) => {
   try {
     const team = teams.value.find((team) => team.id === id);
-    await axios.put(`http://localhost:3000/api/teams/${id}`, {
+    await axios.put(`http://localhost:5000/api/teams/${id}`, {
       ...team,
       counter: Math.max(team.counter - 1, 0),
     });
