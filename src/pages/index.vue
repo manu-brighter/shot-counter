@@ -9,13 +9,24 @@
           class="elevation-1"
           dense
           hide-default-footer
+          :hide-default-header="false"
         >
           <template #body="{ items }">
-            <tr v-for="team in items" :key="team.id">
-              <td>{{ team.id }}</td>
-              <td>{{ team.name }}</td>
-              <td>{{ team.counter }}</td>
+            <tr v-for="team in items" :key="team.id" :class="{ 'golden-glow': team.rank === 1 }">
+              <td>{{ team.rank }}</td>
               <td>
+                <span v-if="!team.editing" @click="team.editing = true">{{ team.name }}</span>
+                <v-text-field
+                  v-else
+                  v-model="team.name"
+                  @blur="saveTeamName(team)"
+                  @keyup.enter="saveTeamName(team)"
+                  dense
+                  autofocus
+                ></v-text-field>
+              </td>
+              <td class="counter-column">{{ team.counter }}</td>
+              <td class="actions-column">
                 <v-btn small icon @click="incrementCounter(team.id)">
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -39,11 +50,29 @@
       <v-card>
         <v-card-title>Team Name eingeben</v-card-title>
         <v-card-text>
-          <v-text-field label="Name" v-model="newTeam.name" outlined></v-text-field>
+          <v-text-field
+            label="Name"
+            v-model="newTeam.name"
+            outlined
+            @keyup.enter="addTeam"
+          ></v-text-field>
         </v-card-text>
         <v-card-actions>
           <v-btn text @click="closeDialog">Abbrechen</v-btn>
           <v-btn color="primary" @click="addTeam">Bestätigen</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="confirmDeleteDialog" max-width="400">
+      <v-card>
+        <v-card-title>Team löschen?</v-card-title>
+        <v-card-text>
+          Möchten Sie das Team wirklich löschen?
+        </v-card-text>
+        <v-card-actions>
+          <v-btn text @click="confirmDeleteDialog = false">Abbrechen</v-btn>
+          <v-btn color="red" @click="confirmDelete">Bestätigen</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -55,7 +84,7 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 
 const headers = [
-  { text: "ID", value: "id" },
+  { text: "Rank", value: "rank" },
   { text: "Name", value: "name" },
   { text: "Counter", value: "counter" },
   { text: "Actions", value: "actions", sortable: false },
@@ -63,12 +92,19 @@ const headers = [
 
 const teams = ref([]);
 const dialog = ref(false);
+const confirmDeleteDialog = ref(false);
 const newTeam = ref({ name: "", counter: 0 });
+let teamToDelete = null;
 
 const fetchTeams = async () => {
   try {
     const response = await axios.get("http://localhost:5000/api/teams");
-    teams.value = response.data;
+    const sortedTeams = response.data.sort((a, b) => b.counter - a.counter);
+    teams.value = sortedTeams.map((team, index) => ({
+      ...team,
+      rank: index + 1,
+      editing: false,
+    }));
   } catch (error) {
     console.error("Error fetching teams:", error);
   }
@@ -76,35 +112,45 @@ const fetchTeams = async () => {
 
 const addTeam = async () => {
   if (!newTeam.value.name.trim()) {
-    alert("Name can't be empty");
+    alert("Team name cannot be empty");
     return;
   }
   try {
     await axios.post("http://localhost:5000/api/teams", newTeam.value);
-    fetchTeams();
+    await fetchTeams();
     closeDialog();
   } catch (error) {
     console.error("Error adding team:", error);
   }
 };
 
-const deleteTeam = async (id) => {
+const deleteTeam = (id) => {
+  teamToDelete = id;
+  confirmDeleteDialog.value = true;
+};
+
+const confirmDelete = async () => {
   try {
-    await axios.delete(`http://localhost:5000/api/teams/${id}`);
-    fetchTeams();
+    await axios.delete(`http://localhost:5000/api/teams/${teamToDelete}`);
+    await fetchTeams();
   } catch (error) {
     console.error("Error deleting team:", error);
+  } finally {
+    confirmDeleteDialog.value = false;
   }
 };
 
 const incrementCounter = async (id) => {
   try {
     const team = teams.value.find((team) => team.id === id);
-    await axios.put(`http://localhost:5000/api/teams/${id}`, {
+    const updatedTeam = { ...team, counter: team.counter + 1 };
+    await axios.put(`http://localhost:5000/api/teams/${id}`, updatedTeam);
+    team.counter += 1;
+    teams.value = teams.value.sort((a, b) => b.counter - a.counter);
+    teams.value = teams.value.map((team, index) => ({
       ...team,
-      counter: team.counter + 1,
-    });
-    fetchTeams();
+      rank: index + 1,
+    }));
   } catch (error) {
     console.error("Error incrementing counter:", error);
   }
@@ -113,13 +159,32 @@ const incrementCounter = async (id) => {
 const decrementCounter = async (id) => {
   try {
     const team = teams.value.find((team) => team.id === id);
-    await axios.put(`http://localhost:5000/api/teams/${id}`, {
+    const updatedTeam = { ...team, counter: Math.max(team.counter - 1, 0) };
+    await axios.put(`http://localhost:5000/api/teams/${id}`, updatedTeam);
+    team.counter = Math.max(team.counter - 1, 0);
+    teams.value = teams.value.sort((a, b) => b.counter - a.counter);
+    teams.value = teams.value.map((team, index) => ({
       ...team,
-      counter: Math.max(team.counter - 1, 0),
-    });
-    fetchTeams();
+      rank: index + 1,
+    }));
   } catch (error) {
     console.error("Error decrementing counter:", error);
+  }
+};
+
+const saveTeamName = async (team) => {
+  if (!team.name.trim()) {
+    alert("Team name cannot be empty");
+    return;
+  }
+  try {
+    await axios.put(`http://localhost:5000/api/teams/${team.id}`, {
+      ...team,
+      counter: team.counter,
+    });
+    team.editing = false;
+  } catch (error) {
+    console.error("Error updating team name:", error);
   }
 };
 
@@ -131,3 +196,36 @@ const closeDialog = () => {
 
 onMounted(fetchTeams);
 </script>
+
+<style scoped>
+@keyframes sparkle {
+  0%, 100% {
+    box-shadow: 0 0 10px gold, 0 0 20px gold;
+  }
+  50% {
+    box-shadow: 0 0 20px gold, 0 0 30px gold;
+  }
+}
+
+.golden-glow {
+  background-color: #8a7724;
+  animation: sparkle 1.5s infinite;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.counter-column {
+  text-align: right;
+  font-weight: bold;
+}
+
+.v-data-table {
+  font-size: 160%;
+}
+
+.v-card-title {
+  font-size: 200%;
+}
+</style>
