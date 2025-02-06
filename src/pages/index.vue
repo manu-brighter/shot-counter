@@ -226,6 +226,6 @@ onMounted(fetchTeams);
 }
 
 .v-card-title {
-  font-size: 200%;
+  font-size: 300%;
 }
 </style>
