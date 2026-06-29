@@ -9,7 +9,6 @@
           class="elevation-1"
           dense
           hide-default-footer
-          :hide-default-header="false"
         >
           <template #body="{ items }">
             <tr v-for="team in items" :key="team.id" :class="{ 'golden-glow': team.rank === 1 }">
@@ -93,7 +92,7 @@ const headers = [
 const teams = ref([]);
 const dialog = ref(false);
 const confirmDeleteDialog = ref(false);
-const newTeam = ref({ name: "", counter: 0 });
+const newTeam = ref({ name: "" });
 let teamToDelete = null;
 
 const fetchTeams = async () => {
@@ -191,7 +190,7 @@ const saveTeamName = async (team) => {
 const openDialog = () => (dialog.value = true);
 const closeDialog = () => {
   dialog.value = false;
-  newTeam.value = { name: "", counter: 0 };
+  newTeam.value = { name: "" };
 };
 
 onMounted(fetchTeams);
