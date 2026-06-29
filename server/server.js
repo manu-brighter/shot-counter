@@ -1,16 +1,19 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const mysql = require("mysql2");
+const config = require("./config");
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: config.FRONTEND_ORIGIN }));
+app.use(helmet());
 app.use(express.json());
 
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "shot_counter",
+  host: config.DB_HOST,
+  user: config.DB_USER,
+  password: config.DB_PASSWORD,
+  database: config.DB_NAME,
 });
 
 db.connect((err) => {
@@ -27,6 +30,11 @@ app.get("/api/teams", (req, res) => {
 
 app.post("/api/teams", (req, res) => {
   const { name, counter } = req.body;
+  if (typeof name !== "string" || name.trim() === "" || name.length > 100) {
+    return res
+      .status(400)
+      .json({ error: "Name is required and must be at most 100 characters" });
+  }
   db.query(
     "INSERT INTO teams (name, counter) VALUES (?, ?)",
     [name, counter || 0],
@@ -43,6 +51,14 @@ app.post("/api/teams", (req, res) => {
 app.put("/api/teams/:id", (req, res) => {
   const { id } = req.params;
   const { name, counter } = req.body;
+  if (typeof name !== "string" || name.trim() === "" || name.length > 100) {
+    return res
+      .status(400)
+      .json({ error: "Name is required and must be at most 100 characters" });
+  }
+  if (!(Number.isInteger(Number(counter)) && Number(counter) >= 0)) {
+    return res.status(400).json({ error: "Invalid counter value" });
+  }
   db.query(
     "UPDATE teams SET name = ?, counter = ? WHERE id = ?",
     [name, counter, id],
@@ -61,5 +77,6 @@ app.delete("/api/teams/:id", (req, res) => {
   });
 });
 
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(config.PORT, () =>
+  console.log(`Server running on http://localhost:${config.PORT}`)
+);
