@@ -135,21 +135,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed } from 'vue';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
 
 const headers = [
-  { text: "Rank", value: "rank" },
-  { text: "Name", value: "name" },
-  { text: "Counter", value: "counter" },
-  { text: "Actions", value: "actions", sortable: false },
+  { text: 'Rank', value: 'rank' },
+  { text: 'Name', value: 'name' },
+  { text: 'Counter', value: 'counter' },
+  { text: 'Actions', value: 'actions', sortable: false },
 ];
 
 const teams = ref([]);
 const addTeamDialog = ref(false);
 const confirmDeleteDialog = ref(false);
-const newTeam = ref({ name: "" });
+const newTeam = ref({ name: '' });
 const pendingDeleteId = ref(null);
 const editingTeamId = ref(null);
 
@@ -163,26 +163,26 @@ const fetchTeams = async () => {
     if (!res.ok) throw new Error(await res.text());
     teams.value = await res.json();
   } catch (err) {
-    console.error("Error fetching teams:", err);
+    console.error('Error fetching teams:', err);
   }
 };
 
 const addTeam = async () => {
   if (!newTeam.value.name.trim()) {
-    alert("Team name cannot be empty");
+    alert('Team name cannot be empty');
     return;
   }
   try {
     const res = await fetch(`${API_BASE}/api/teams`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newTeam.value),
     });
     if (!res.ok) throw new Error(await res.text());
     await fetchTeams();
     closeDialog();
   } catch (err) {
-    console.error("Error adding team:", err);
+    console.error('Error adding team:', err);
   }
 };
 
@@ -199,12 +199,12 @@ const cancelDelete = () => {
 const confirmDelete = async () => {
   try {
     const res = await fetch(`${API_BASE}/api/teams/${pendingDeleteId.value}`, {
-      method: "DELETE",
+      method: 'DELETE',
     });
     if (!res.ok) throw new Error(await res.text());
     await fetchTeams();
   } catch (err) {
-    console.error("Error deleting team:", err);
+    console.error('Error deleting team:', err);
   } finally {
     cancelDelete();
   }
@@ -212,7 +212,7 @@ const confirmDelete = async () => {
 
 async function incrementTeam(team) {
   try {
-    const res = await fetch(`${API_BASE}/api/teams/${team.id}/increment`, { method: "POST" });
+    const res = await fetch(`${API_BASE}/api/teams/${team.id}/increment`, { method: 'POST' });
     if (!res.ok) throw new Error(await res.text());
     const updated = await res.json();
     const idx = teams.value.findIndex((t) => t.id === team.id);
@@ -225,7 +225,7 @@ async function incrementTeam(team) {
 async function decrementTeam(team) {
   if (team.counter <= 0) return;
   try {
-    const res = await fetch(`${API_BASE}/api/teams/${team.id}/decrement`, { method: "POST" });
+    const res = await fetch(`${API_BASE}/api/teams/${team.id}/decrement`, { method: 'POST' });
     if (!res.ok) throw new Error(await res.text());
     const updated = await res.json();
     const idx = teams.value.findIndex((t) => t.id === team.id);
@@ -237,27 +237,27 @@ async function decrementTeam(team) {
 
 const saveTeamName = async (team) => {
   if (!team.name.trim()) {
-    alert("Team name cannot be empty");
+    alert('Team name cannot be empty');
     return;
   }
   try {
     const updatePayload = { name: team.name, counter: team.counter };
     const res = await fetch(`${API_BASE}/api/teams/${team.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatePayload),
     });
     if (!res.ok) throw new Error(await res.text());
     editingTeamId.value = null;
   } catch (err) {
-    console.error("Error updating team name:", err);
+    console.error('Error updating team name:', err);
   }
 };
 
 const openDialog = () => (addTeamDialog.value = true);
 const closeDialog = () => {
   addTeamDialog.value = false;
-  newTeam.value = { name: "" };
+  newTeam.value = { name: '' };
 };
 
 onMounted(fetchTeams);
