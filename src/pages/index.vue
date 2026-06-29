@@ -84,7 +84,7 @@
         <v-card-text>
           <v-text-field
             v-model="newTeam.name"
-            label="Name"
+            label="Teamname eingeben"
             outlined
             @keyup.enter="addTeam"
           />
@@ -113,7 +113,7 @@
       <v-card>
         <v-card-title>Team löschen?</v-card-title>
         <v-card-text>
-          Möchten Sie das Team wirklich löschen?
+          Möchtest du das Team wirklich löschen?
         </v-card-text>
         <v-card-actions>
           <v-btn
@@ -140,10 +140,10 @@ import { ref, onMounted, computed } from 'vue';
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
 
 const headers = [
-  { text: 'Rank', value: 'rank' },
-  { text: 'Name', value: 'name' },
-  { text: 'Counter', value: 'counter' },
-  { text: 'Actions', value: 'actions', sortable: false },
+  { title: 'Platz', key: 'rank', sortable: false },
+  { title: 'Teamname', key: 'name' },
+  { title: 'Treffer', key: 'counter' },
+  { title: 'Aktionen', key: 'actions', sortable: false },
 ];
 
 const teams = ref([]);
