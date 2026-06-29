@@ -18,11 +18,19 @@ Shot-Counter fürs Wamserfest.
    ```
 
 3. Configure environment variables:
+
+   **Server** (required):
    ```bash
    cd server
    cp .env.example .env
    ```
    Edit `.env` and update database credentials if needed (defaults: `root`/`root` on `localhost:3306`).
+
+   **Root** (optional):
+   ```bash
+   cp .env.example .env
+   ```
+   Contains `VITE_API_BASE_URL` (defaults to `http://localhost:5000`). Only needed if your backend runs on a different port.
 
 ## Database Setup
 
@@ -65,9 +73,12 @@ The backend runs on `http://localhost:5000` by default.
 
 | Method | Endpoint | Body | Description |
 |--------|----------|------|-------------|
+| GET | `/api/health` | — | Health check (returns `{ status, db }`) |
 | GET | `/api/teams` | — | Fetch all teams and their counters |
 | POST | `/api/teams` | `{ name: string, counter?: number }` | Add a new team |
 | PUT | `/api/teams/:id` | `{ name: string, counter: number }` | Update team name and counter |
 | DELETE | `/api/teams/:id` | — | Delete a team |
+| POST | `/api/teams/:id/increment` | — | Atomically increment counter by 1 |
+| POST | `/api/teams/:id/decrement` | — | Atomically decrement counter by 1 (floor 0) |
 
 All responses are JSON. Errors return appropriate HTTP status codes (400 for validation, 500 for server errors).
