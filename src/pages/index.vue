@@ -1,8 +1,7 @@
 <template>
   <v-container>
     <v-card
-      class="mx-auto my-5"
-      style="width: 80%;"
+      class="mx-auto my-5 score-card"
     >
       <v-card-title>SHÖTTLI-COUNTER</v-card-title>
       <v-card-text>
@@ -50,7 +49,7 @@
                   name="counter-bump"
                   mode="out-in"
                 >
-                  <span :key="team.counter">{{ team.counter }}</span>
+                  <span :key="team.counter" class="counter-value">{{ team.counter }}</span>
                 </Transition>
               </td>
               <td class="actions-column">
@@ -323,18 +322,38 @@ onMounted(fetchTeams);
 </script>
 
 <style scoped>
+/* design tokens */
+:root {
+  --gold: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.35);
+  --gold-text: #7a5f00;
+}
+
 @keyframes sparkle {
   0%, 100% {
-    box-shadow: 0 0 10px gold, 0 0 20px gold;
+    filter: drop-shadow(0 0 8px var(--gold-glow));
   }
   50% {
-    box-shadow: 0 0 20px gold, 0 0 30px gold;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
   }
 }
 
 .golden-glow {
-  background-color: #8a7724;
-  animation: sparkle 1.5s infinite;
+  background-color: var(--gold);
+  color: var(--gold-text);
+  animation: sparkle 1.5s infinite ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .golden-glow {
+    animation: none;
+  }
+}
+
+.score-card {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .actions-column {
@@ -343,15 +362,19 @@ onMounted(fetchTeams);
 
 .counter-column {
   text-align: right;
-  font-weight: bold;
 }
 
-.v-data-table {
-  font-size: 160%;
+.counter-value {
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
-.v-card-title {
-  font-size: 300%;
+:deep(.v-data-table) {
+  font-size: 1.6rem;
+}
+
+:deep(.v-card-title) {
+  font-size: 3rem;
 }
 
 .team-name {
