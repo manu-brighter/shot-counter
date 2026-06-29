@@ -5,8 +5,11 @@
  */
 
 // Styles
-import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
+
+// Icon set — SVG only (3 icons used: plus, minus, delete)
+import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
+import { mdiPlus, mdiMinus, mdiDelete } from '@mdi/js'
 
 // Composables
 import { createVuetify } from 'vuetify'
@@ -15,5 +18,15 @@ import { createVuetify } from 'vuetify'
 export default createVuetify({
   theme: {
     defaultTheme: 'dark',
+  },
+  icons: {
+    defaultSet: 'mdi',
+    aliases: {
+      ...aliases,
+      plus: mdiPlus,
+      minus: mdiMinus,
+      delete: mdiDelete,
+    },
+    sets: { mdi },
   },
 })

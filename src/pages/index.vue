@@ -27,13 +27,13 @@
               <td class="counter-column">{{ team.counter }}</td>
               <td class="actions-column">
                 <v-btn small icon @click="incrementCounter(team.id)">
-                  <v-icon>mdi-plus</v-icon>
+                  <v-icon>$plus</v-icon>
                 </v-btn>
                 <v-btn small icon @click="decrementCounter(team.id)">
-                  <v-icon>mdi-minus</v-icon>
+                  <v-icon>$minus</v-icon>
                 </v-btn>
                 <v-btn small icon color="red" @click="deleteTeam(team.id)">
-                  <v-icon>mdi-delete</v-icon>
+                  <v-icon>$delete</v-icon>
                 </v-btn>
               </td>
             </tr>
