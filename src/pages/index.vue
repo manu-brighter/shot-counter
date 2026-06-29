@@ -129,6 +129,8 @@
           </v-btn>
           <v-btn
             color="primary"
+            :loading="submitting"
+            :disabled="submitting"
             @click="addTeam"
           >
             Bestätigen
@@ -201,6 +203,7 @@ const newTeam = ref({ name: '' });
 const pendingDeleteId = ref(null);
 const editingTeamId = ref(null);
 const loading = ref(false);
+const submitting = ref(false);
 
 const snackbar = ref(false);
 const snackbarMessage = ref('');
@@ -237,19 +240,23 @@ const addTeam = async () => {
     showSnackbar('Bitte einen Teamnamen eingeben.', 'error');
     return;
   }
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     const res = await fetch(`${API_BASE}/api/teams`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newTeam.value),
+      body: JSON.stringify({ name: newTeam.value.name }),
     });
     if (!res.ok) throw new Error(await res.text());
     closeDialog();
-    showSnackbar('Team hinzugefügt.');
     await fetchTeams();
+    showSnackbar('Team hinzugefügt.');
   } catch (err) {
     console.error('Error adding team:', err);
     showSnackbar('Fehler beim Hinzufügen des Teams.', 'error');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -307,16 +314,17 @@ async function decrementTeam(team) {
 }
 
 const saveTeamName = async (team) => {
+  if (editingTeamId.value !== team.id) return;
   if (!team.name.trim()) {
-    showSnackbar('Bitte einen Teamnamen eingeben.', 'error');
+    editingTeamId.value = null;
+    showSnackbar('Teamname darf nicht leer sein.', 'error');
     return;
   }
   try {
-    const updatePayload = { name: team.name, counter: team.counter };
     const res = await fetch(`${API_BASE}/api/teams/${team.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatePayload),
+      body: JSON.stringify({ name: team.name }),
     });
     if (!res.ok) throw new Error(await res.text());
     editingTeamId.value = null;

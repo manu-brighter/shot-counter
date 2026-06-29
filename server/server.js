@@ -42,55 +42,58 @@ app.get('/api/teams', (_req, res) => {
 });
 
 app.post('/api/teams', (req, res) => {
-  const { name, counter } = req.body;
+  const { name } = req.body;
   if (typeof name !== 'string' || name.trim() === '' || name.length > 100) {
     return res
       .status(400)
       .json({ error: 'Name is required and must be at most 100 characters' });
   }
   db.query(
-    'INSERT INTO teams (name, counter) VALUES (?, ?)',
-    [name, counter || 0],
+    'INSERT INTO teams (name, counter) VALUES (?, 0)',
+    [name],
     (err, _results) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Internal server error' });
       }
       res.status(201).json({ message: 'Team added successfully' });
-    }
+    },
   );
 });
 
 app.put('/api/teams/:id', (req, res) => {
   const { id } = req.params;
-  const { name, counter } = req.body;
+  const { name } = req.body;
   if (typeof name !== 'string' || name.trim() === '' || name.length > 100) {
     return res
       .status(400)
       .json({ error: 'Name is required and must be at most 100 characters' });
   }
-  if (!(Number.isInteger(Number(counter)) && Number(counter) >= 0)) {
-    return res.status(400).json({ error: 'Invalid counter value' });
-  }
   db.query(
-    'UPDATE teams SET name = ?, counter = ? WHERE id = ?',
-    [name, counter, id],
-    (err, _results) => {
+    'UPDATE teams SET name = ? WHERE id = ?',
+    [name, id],
+    (err, results) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Internal server error' });
       }
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'Team not found' });
+      }
       res.json({ message: 'Team updated successfully' });
-    }
+    },
   );
 });
 
 app.delete('/api/teams/:id', (req, res) => {
   const { id } = req.params;
-  db.query('DELETE FROM teams WHERE id = ?', [id], (err, _results) => {
+  db.query('DELETE FROM teams WHERE id = ?', [id], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Internal server error' });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Team not found' });
     }
     res.json({ message: 'Team deleted successfully' });
   });
