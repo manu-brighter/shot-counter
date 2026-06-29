@@ -9,23 +9,36 @@ app.use(cors({ origin: config.FRONTEND_ORIGIN }));
 app.use(helmet());
 app.use(express.json());
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
+  connectionLimit: 10,
   host: config.DB_HOST,
   user: config.DB_USER,
   password: config.DB_PASSWORD,
   database: config.DB_NAME,
 });
 
-db.connect((err) => {
-  if (err) throw err;
-  console.log("Connected to MySQL database!");
+app.get("/api/health", (req, res) => {
+  db.query("SELECT 1", (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(503).json({ status: "error", db: err.message });
+    }
+    res.json({ status: "ok", db: "connected" });
+  });
 });
 
 app.get("/api/teams", (req, res) => {
-  db.query("SELECT * FROM teams", (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
+  db.query(
+    "SELECT id, name, counter FROM teams ORDER BY counter DESC, id ASC",
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+      res.set("Cache-Control", "no-store");
+      res.json(results);
+    }
+  );
 });
 
 app.post("/api/teams", (req, res) => {
@@ -41,7 +54,7 @@ app.post("/api/teams", (req, res) => {
     (err, results) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ message: "Error adding team" });
+        return res.status(500).json({ error: "Internal server error" });
       }
       res.status(201).json({ message: "Team added successfully" });
     }
@@ -63,7 +76,10 @@ app.put("/api/teams/:id", (req, res) => {
     "UPDATE teams SET name = ?, counter = ? WHERE id = ?",
     [name, counter, id],
     (err, results) => {
-      if (err) throw err;
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
       res.json({ message: "Team updated successfully" });
     }
   );
@@ -72,9 +88,17 @@ app.put("/api/teams/:id", (req, res) => {
 app.delete("/api/teams/:id", (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM teams WHERE id = ?", [id], (err, results) => {
-    if (err) throw err;
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
     res.json({ message: "Team deleted successfully" });
   });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 app.listen(config.PORT, () =>
