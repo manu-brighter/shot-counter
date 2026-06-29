@@ -9,8 +9,10 @@
         <v-data-table
           :items="rankedTeams"
           :headers="headers"
+          :loading="loading"
+          :no-data-text="'Keine Teams vorhanden.'"
           class="elevation-1"
-          dense
+          density="compact"
           hide-default-footer
         >
           <template #body="{ items }">
@@ -23,39 +25,54 @@
               <td>
                 <span
                   v-if="editingTeamId !== team.id"
+                  class="team-name"
                   @click="editingTeamId = team.id"
-                >{{ team.name }}</span>
+                >
+                  {{ team.name }}
+                  <v-icon
+                    size="small"
+                    class="team-name__edit-icon"
+                  >$edit</v-icon>
+                </span>
                 <v-text-field
                   v-else
                   v-model="team.name"
-                  dense
+                  variant="outlined"
+                  density="compact"
+                  hide-details="true"
                   autofocus
                   @blur="saveTeamName(team)"
                   @keyup.enter="saveTeamName(team)"
                 />
               </td>
               <td class="counter-column">
-                {{ team.counter }}
+                <Transition
+                  name="counter-bump"
+                  mode="out-in"
+                >
+                  <span :key="team.counter">{{ team.counter }}</span>
+                </Transition>
               </td>
               <td class="actions-column">
                 <v-btn
-                  small
+                  size="x-large"
                   icon
                   @click="incrementTeam(team)"
                 >
                   <v-icon>$plus</v-icon>
                 </v-btn>
                 <v-btn
-                  small
+                  size="x-large"
                   icon
                   @click="decrementTeam(team)"
                 >
                   <v-icon>$minus</v-icon>
                 </v-btn>
                 <v-btn
-                  small
+                  size="small"
                   icon
-                  color="red"
+                  color="error"
+                  class="ml-4"
                   @click="openConfirmDeleteDialog(team)"
                 >
                   <v-icon>$delete</v-icon>
@@ -85,13 +102,14 @@
           <v-text-field
             v-model="newTeam.name"
             label="Teamname eingeben"
-            outlined
+            variant="outlined"
+            density="compact"
             @keyup.enter="addTeam"
           />
         </v-card-text>
         <v-card-actions>
           <v-btn
-            text
+            variant="text"
             @click="closeDialog"
           >
             Abbrechen
@@ -113,17 +131,17 @@
       <v-card>
         <v-card-title>Team löschen?</v-card-title>
         <v-card-text>
-          Möchtest du das Team wirklich löschen?
+          Möchtest du das Team <strong>{{ pendingDeleteTeam?.name }}</strong> wirklich löschen?
         </v-card-text>
         <v-card-actions>
           <v-btn
-            text
+            variant="text"
             @click="cancelDelete"
           >
             Abbrechen
           </v-btn>
           <v-btn
-            color="red"
+            color="error"
             @click="confirmDelete"
           >
             Bestätigen
@@ -131,6 +149,23 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-snackbar
+      v-model="snackbar"
+      :color="snackbarColor"
+      :timeout="3000"
+      location="bottom"
+    >
+      {{ snackbarMessage }}
+      <template #actions>
+        <v-btn
+          variant="text"
+          @click="snackbar = false"
+        >
+          Schliessen
+        </v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -152,24 +187,41 @@ const confirmDeleteDialog = ref(false);
 const newTeam = ref({ name: '' });
 const pendingDeleteId = ref(null);
 const editingTeamId = ref(null);
+const loading = ref(false);
+
+const snackbar = ref(false);
+const snackbarMessage = ref('');
+const snackbarColor = ref('success');
+
+function showSnackbar(message, color = 'success') {
+  snackbarMessage.value = message;
+  snackbarColor.value = color;
+  snackbar.value = true;
+}
 
 const rankedTeams = computed(() => {
   return [...teams.value].sort((a, b) => b.counter - a.counter || a.id - b.id);
 });
 
+const pendingDeleteTeam = computed(() => teams.value.find((t) => t.id === pendingDeleteId.value));
+
 const fetchTeams = async () => {
+  loading.value = true;
   try {
     const res = await fetch(`${API_BASE}/api/teams`);
     if (!res.ok) throw new Error(await res.text());
     teams.value = await res.json();
   } catch (err) {
     console.error('Error fetching teams:', err);
+    showSnackbar('Fehler beim Laden der Teams.', 'error');
+  } finally {
+    loading.value = false;
   }
 };
 
 const addTeam = async () => {
   if (!newTeam.value.name.trim()) {
-    alert('Team name cannot be empty');
+    showSnackbar('Bitte einen Teamnamen eingeben.', 'error');
     return;
   }
   try {
@@ -179,10 +231,12 @@ const addTeam = async () => {
       body: JSON.stringify(newTeam.value),
     });
     if (!res.ok) throw new Error(await res.text());
-    await fetchTeams();
     closeDialog();
+    showSnackbar('Team hinzugefügt.');
+    await fetchTeams();
   } catch (err) {
     console.error('Error adding team:', err);
+    showSnackbar('Fehler beim Hinzufügen des Teams.', 'error');
   }
 };
 
@@ -202,9 +256,11 @@ const confirmDelete = async () => {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(await res.text());
+    showSnackbar('Team gelöscht.');
     await fetchTeams();
   } catch (err) {
     console.error('Error deleting team:', err);
+    showSnackbar('Fehler beim Löschen des Teams.', 'error');
   } finally {
     cancelDelete();
   }
@@ -219,6 +275,7 @@ async function incrementTeam(team) {
     if (idx !== -1) teams.value[idx].counter = updated.counter;
   } catch (err) {
     console.error(err);
+    showSnackbar('Fehler beim Aktualisieren des Zählers.', 'error');
   }
 }
 
@@ -232,12 +289,13 @@ async function decrementTeam(team) {
     if (idx !== -1) teams.value[idx].counter = updated.counter;
   } catch (err) {
     console.error(err);
+    showSnackbar('Fehler beim Aktualisieren des Zählers.', 'error');
   }
 }
 
 const saveTeamName = async (team) => {
   if (!team.name.trim()) {
-    alert('Team name cannot be empty');
+    showSnackbar('Bitte einen Teamnamen eingeben.', 'error');
     return;
   }
   try {
@@ -251,6 +309,7 @@ const saveTeamName = async (team) => {
     editingTeamId.value = null;
   } catch (err) {
     console.error('Error updating team name:', err);
+    showSnackbar('Fehler beim Speichern des Teamnamens.', 'error');
   }
 };
 
@@ -293,5 +352,28 @@ onMounted(fetchTeams);
 
 .v-card-title {
   font-size: 300%;
+}
+
+.team-name {
+  cursor: pointer;
+}
+
+.team-name__edit-icon {
+  opacity: 0.5;
+}
+
+.counter-bump-enter-active,
+.counter-bump-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.counter-bump-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.counter-bump-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 </style>
