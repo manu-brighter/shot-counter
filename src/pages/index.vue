@@ -1,38 +1,63 @@
 <template>
   <v-container>
-    <v-card class="mx-auto my-5" style="width: 80%;">
+    <v-card
+      class="mx-auto my-5"
+      style="width: 80%;"
+    >
       <v-card-title>SHÖTTLI-COUNTER</v-card-title>
       <v-card-text>
         <v-data-table
-          :items="teams"
+          :items="rankedTeams"
           :headers="headers"
           class="elevation-1"
           dense
           hide-default-footer
         >
           <template #body="{ items }">
-            <tr v-for="team in items" :key="team.id" :class="{ 'golden-glow': team.rank === 1 }">
-              <td>{{ team.rank }}</td>
+            <tr
+              v-for="(team, index) in items"
+              :key="team.id"
+              :class="{ 'golden-glow': index === 0 }"
+            >
+              <td>{{ index + 1 }}</td>
               <td>
-                <span v-if="!team.editing" @click="team.editing = true">{{ team.name }}</span>
+                <span
+                  v-if="editingTeamId !== team.id"
+                  @click="editingTeamId = team.id"
+                >{{ team.name }}</span>
                 <v-text-field
                   v-else
                   v-model="team.name"
-                  @blur="saveTeamName(team)"
-                  @keyup.enter="saveTeamName(team)"
                   dense
                   autofocus
-                ></v-text-field>
+                  @blur="saveTeamName(team)"
+                  @keyup.enter="saveTeamName(team)"
+                />
               </td>
-              <td class="counter-column">{{ team.counter }}</td>
+              <td class="counter-column">
+                {{ team.counter }}
+              </td>
               <td class="actions-column">
-                <v-btn small icon @click="incrementCounter(team.id)">
+                <v-btn
+                  small
+                  icon
+                  @click="incrementTeam(team)"
+                >
                   <v-icon>$plus</v-icon>
                 </v-btn>
-                <v-btn small icon @click="decrementCounter(team.id)">
+                <v-btn
+                  small
+                  icon
+                  @click="decrementTeam(team)"
+                >
                   <v-icon>$minus</v-icon>
                 </v-btn>
-                <v-btn small icon color="red" @click="deleteTeam(team.id)">
+                <v-btn
+                  small
+                  icon
+                  color="red"
+                  @click="openConfirmDeleteDialog(team)"
+                >
                   <v-icon>$delete</v-icon>
                 </v-btn>
               </td>
@@ -41,37 +66,68 @@
         </v-data-table>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="primary" @click="openDialog">Team hinzufügen</v-btn>
+        <v-btn
+          color="primary"
+          @click="openDialog"
+        >
+          Team hinzufügen
+        </v-btn>
       </v-card-actions>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="400">
+    <v-dialog
+      v-model="addTeamDialog"
+      max-width="400"
+    >
       <v-card>
         <v-card-title>Team Name eingeben</v-card-title>
         <v-card-text>
           <v-text-field
-            label="Name"
             v-model="newTeam.name"
+            label="Name"
             outlined
             @keyup.enter="addTeam"
-          ></v-text-field>
+          />
         </v-card-text>
         <v-card-actions>
-          <v-btn text @click="closeDialog">Abbrechen</v-btn>
-          <v-btn color="primary" @click="addTeam">Bestätigen</v-btn>
+          <v-btn
+            text
+            @click="closeDialog"
+          >
+            Abbrechen
+          </v-btn>
+          <v-btn
+            color="primary"
+            @click="addTeam"
+          >
+            Bestätigen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="confirmDeleteDialog" max-width="400">
+    <v-dialog
+      v-model="confirmDeleteDialog"
+      max-width="400"
+    >
       <v-card>
         <v-card-title>Team löschen?</v-card-title>
         <v-card-text>
           Möchten Sie das Team wirklich löschen?
         </v-card-text>
         <v-card-actions>
-          <v-btn text @click="confirmDeleteDialog = false">Abbrechen</v-btn>
-          <v-btn color="red" @click="confirmDelete">Bestätigen</v-btn>
+          <v-btn
+            text
+            @click="cancelDelete"
+          >
+            Abbrechen
+          </v-btn>
+          <v-btn
+            color="red"
+            @click="confirmDelete"
+          >
+            Bestätigen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -79,8 +135,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
+import { ref, onMounted, computed } from "vue";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
 
 const headers = [
   { text: "Rank", value: "rank" },
@@ -90,22 +147,23 @@ const headers = [
 ];
 
 const teams = ref([]);
-const dialog = ref(false);
+const addTeamDialog = ref(false);
 const confirmDeleteDialog = ref(false);
 const newTeam = ref({ name: "" });
-let teamToDelete = null;
+const pendingDeleteId = ref(null);
+const editingTeamId = ref(null);
+
+const rankedTeams = computed(() => {
+  return [...teams.value].sort((a, b) => b.counter - a.counter || a.id - b.id);
+});
 
 const fetchTeams = async () => {
   try {
-    const response = await axios.get("http://localhost:5000/api/teams");
-    const sortedTeams = response.data.sort((a, b) => b.counter - a.counter);
-    teams.value = sortedTeams.map((team, index) => ({
-      ...team,
-      rank: index + 1,
-      editing: false,
-    }));
-  } catch (error) {
-    console.error("Error fetching teams:", error);
+    const res = await fetch(`${API_BASE}/api/teams`);
+    if (!res.ok) throw new Error(await res.text());
+    teams.value = await res.json();
+  } catch (err) {
+    console.error("Error fetching teams:", err);
   }
 };
 
@@ -115,61 +173,67 @@ const addTeam = async () => {
     return;
   }
   try {
-    await axios.post("http://localhost:5000/api/teams", newTeam.value);
+    const res = await fetch(`${API_BASE}/api/teams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTeam.value),
+    });
+    if (!res.ok) throw new Error(await res.text());
     await fetchTeams();
     closeDialog();
-  } catch (error) {
-    console.error("Error adding team:", error);
+  } catch (err) {
+    console.error("Error adding team:", err);
   }
 };
 
-const deleteTeam = (id) => {
-  teamToDelete = id;
+const openConfirmDeleteDialog = (team) => {
+  pendingDeleteId.value = team.id;
   confirmDeleteDialog.value = true;
+};
+
+const cancelDelete = () => {
+  confirmDeleteDialog.value = false;
+  pendingDeleteId.value = null;
 };
 
 const confirmDelete = async () => {
   try {
-    await axios.delete(`http://localhost:5000/api/teams/${teamToDelete}`);
+    const res = await fetch(`${API_BASE}/api/teams/${pendingDeleteId.value}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error(await res.text());
     await fetchTeams();
-  } catch (error) {
-    console.error("Error deleting team:", error);
+  } catch (err) {
+    console.error("Error deleting team:", err);
   } finally {
-    confirmDeleteDialog.value = false;
+    cancelDelete();
   }
 };
 
-const incrementCounter = async (id) => {
+async function incrementTeam(team) {
   try {
-    const team = teams.value.find((team) => team.id === id);
-    const updatedTeam = { ...team, counter: team.counter + 1 };
-    await axios.put(`http://localhost:5000/api/teams/${id}`, updatedTeam);
-    team.counter += 1;
-    teams.value = teams.value.sort((a, b) => b.counter - a.counter);
-    teams.value = teams.value.map((team, index) => ({
-      ...team,
-      rank: index + 1,
-    }));
-  } catch (error) {
-    console.error("Error incrementing counter:", error);
+    const res = await fetch(`${API_BASE}/api/teams/${team.id}/increment`, { method: "POST" });
+    if (!res.ok) throw new Error(await res.text());
+    const updated = await res.json();
+    const idx = teams.value.findIndex((t) => t.id === team.id);
+    if (idx !== -1) teams.value[idx].counter = updated.counter;
+  } catch (err) {
+    console.error(err);
   }
-};
+}
 
-const decrementCounter = async (id) => {
+async function decrementTeam(team) {
+  if (team.counter <= 0) return;
   try {
-    const team = teams.value.find((team) => team.id === id);
-    const updatedTeam = { ...team, counter: Math.max(team.counter - 1, 0) };
-    await axios.put(`http://localhost:5000/api/teams/${id}`, updatedTeam);
-    team.counter = Math.max(team.counter - 1, 0);
-    teams.value = teams.value.sort((a, b) => b.counter - a.counter);
-    teams.value = teams.value.map((team, index) => ({
-      ...team,
-      rank: index + 1,
-    }));
-  } catch (error) {
-    console.error("Error decrementing counter:", error);
+    const res = await fetch(`${API_BASE}/api/teams/${team.id}/decrement`, { method: "POST" });
+    if (!res.ok) throw new Error(await res.text());
+    const updated = await res.json();
+    const idx = teams.value.findIndex((t) => t.id === team.id);
+    if (idx !== -1) teams.value[idx].counter = updated.counter;
+  } catch (err) {
+    console.error(err);
   }
-};
+}
 
 const saveTeamName = async (team) => {
   if (!team.name.trim()) {
@@ -177,19 +241,22 @@ const saveTeamName = async (team) => {
     return;
   }
   try {
-    await axios.put(`http://localhost:5000/api/teams/${team.id}`, {
-      ...team,
-      counter: team.counter,
+    const updatePayload = { name: team.name, counter: team.counter };
+    const res = await fetch(`${API_BASE}/api/teams/${team.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatePayload),
     });
-    team.editing = false;
-  } catch (error) {
-    console.error("Error updating team name:", error);
+    if (!res.ok) throw new Error(await res.text());
+    editingTeamId.value = null;
+  } catch (err) {
+    console.error("Error updating team name:", err);
   }
 };
 
-const openDialog = () => (dialog.value = true);
+const openDialog = () => (addTeamDialog.value = true);
 const closeDialog = () => {
-  dialog.value = false;
+  addTeamDialog.value = false;
   newTeam.value = { name: "" };
 };
 

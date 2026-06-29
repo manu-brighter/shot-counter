@@ -96,6 +96,62 @@ app.delete("/api/teams/:id", (req, res) => {
   });
 });
 
+app.post("/api/teams/:id/increment", (req, res) => {
+  const { id } = req.params;
+  db.query(
+    "UPDATE teams SET counter = counter + 1 WHERE id = ?",
+    [id],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+      db.query(
+        "SELECT id, name, counter FROM teams WHERE id = ?",
+        [id],
+        (err2, results) => {
+          if (err2) {
+            console.error(err2);
+            return res.status(500).json({ error: "Internal server error" });
+          }
+          if (!results.length) {
+            return res.status(404).json({ error: "Team not found" });
+          }
+          res.json(results[0]);
+        }
+      );
+    }
+  );
+});
+
+app.post("/api/teams/:id/decrement", (req, res) => {
+  const { id } = req.params;
+  db.query(
+    "UPDATE teams SET counter = GREATEST(counter - 1, 0) WHERE id = ?",
+    [id],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+      db.query(
+        "SELECT id, name, counter FROM teams WHERE id = ?",
+        [id],
+        (err2, results) => {
+          if (err2) {
+            console.error(err2);
+            return res.status(500).json({ error: "Internal server error" });
+          }
+          if (!results.length) {
+            return res.status(404).json({ error: "Team not found" });
+          }
+          res.json(results[0]);
+        }
+      );
+    }
+  );
+});
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
