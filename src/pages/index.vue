@@ -408,8 +408,10 @@ onMounted(fetchTeams);
   font-size: 1.6rem;
 }
 
-:deep(.v-card-title) {
+.card-title-heading {
   font-size: 3rem;
+  font-weight: inherit;
+  margin: 0;
 }
 
 .team-name {
@@ -430,11 +432,6 @@ onMounted(fetchTeams);
   text-align: left;
 }
 
-.card-title-heading {
-  font-size: inherit;
-  font-weight: inherit;
-  margin: 0;
-}
 
 .counter-bump-enter-active,
 .counter-bump-leave-active {
