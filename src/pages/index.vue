@@ -3,7 +3,11 @@
     <v-card
       class="mx-auto my-5 score-card"
     >
-      <v-card-title>SHÖTTLI-COUNTER</v-card-title>
+      <v-card-title>
+        <h1 class="card-title-heading">
+          SHÖTTLI-COUNTER
+        </h1>
+      </v-card-title>
       <v-card-text>
         <v-data-table
           :items="rankedTeams"
@@ -22,17 +26,20 @@
             >
               <td>{{ index + 1 }}</td>
               <td>
-                <span
+                <button
                   v-if="editingTeamId !== team.id"
-                  class="team-name"
+                  type="button"
+                  class="team-name-btn"
                   @click="editingTeamId = team.id"
                 >
                   {{ team.name }}
                   <v-icon
                     size="small"
                     class="team-name__edit-icon"
-                  >$edit</v-icon>
-                </span>
+                  >
+                    $edit
+                  </v-icon>
+                </button>
                 <v-text-field
                   v-else
                   v-model="team.name"
@@ -40,6 +47,7 @@
                   density="compact"
                   hide-details="true"
                   autofocus
+                  aria-label="Teamname bearbeiten"
                   @blur="saveTeamName(team)"
                   @keyup.enter="saveTeamName(team)"
                 />
@@ -49,13 +57,17 @@
                   name="counter-bump"
                   mode="out-in"
                 >
-                  <span :key="team.counter" class="counter-value">{{ team.counter }}</span>
+                  <span
+                    :key="team.counter"
+                    class="counter-value"
+                  >{{ team.counter }}</span>
                 </Transition>
               </td>
               <td class="actions-column">
                 <v-btn
                   size="x-large"
                   icon
+                  aria-label="Treffer hinzufügen"
                   @click="incrementTeam(team)"
                 >
                   <v-icon>$plus</v-icon>
@@ -63,6 +75,7 @@
                 <v-btn
                   size="x-large"
                   icon
+                  aria-label="Treffer entfernen"
                   @click="decrementTeam(team)"
                 >
                   <v-icon>$minus</v-icon>
@@ -72,6 +85,7 @@
                   icon
                   color="error"
                   class="ml-4"
+                  :aria-label="`Team ${team.name} löschen`"
                   @click="openConfirmDeleteDialog(team)"
                 >
                   <v-icon>$delete</v-icon>
@@ -169,7 +183,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
 
@@ -318,6 +332,14 @@ const closeDialog = () => {
   newTeam.value = { name: '' };
 };
 
+watch(addTeamDialog, (val) => {
+  if (!val) newTeam.value = { name: '' };
+});
+
+watch(confirmDeleteDialog, (val) => {
+  if (!val) pendingDeleteId.value = null;
+});
+
 onMounted(fetchTeams);
 </script>
 
@@ -347,6 +369,11 @@ onMounted(fetchTeams);
 @media (prefers-reduced-motion: reduce) {
   .golden-glow {
     animation: none;
+  }
+
+  .counter-bump-enter-active,
+  .counter-bump-leave-active {
+    transition: none;
   }
 }
 
@@ -383,6 +410,22 @@ onMounted(fetchTeams);
 
 .team-name__edit-icon {
   opacity: 0.5;
+}
+
+.team-name-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.card-title-heading {
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
 }
 
 .counter-bump-enter-active,
