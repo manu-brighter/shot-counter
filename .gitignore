@@ -1,4 +1,5 @@
 .rework/
+dist-electron/
 .DS_Store
 node_modules
 /dist

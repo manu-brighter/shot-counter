@@ -2,7 +2,8 @@
   "name": "shot-counter",
   "private": true,
   "type": "module",
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "main": "main.cjs",
   "engines": {
     "node": ">=20"
   },
@@ -10,17 +11,26 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "electron:dev": "concurrently --kill-others \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder install-app-deps && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "@mdi/font": "7.4.47",
-    "@mdi/js": "^7.4.47",
-    "vue": "^3.4.31",
-    "vuetify": "^3.6.14"
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
+    "@mdi/js": "^7.4.47",
     "@vitejs/plugin-vue": "^5.0.5",
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.14.0",
     "eslint-plugin-vue": "^9.30.0",
     "sass-embedded": "^1.77.8",
@@ -31,6 +41,36 @@
     "vite": "^5.4.0",
     "vite-plugin-vue-layouts": "^0.11.0",
     "vite-plugin-vuetify": "^2.0.3",
-    "vue-router": "^4.4.0"
+    "vue": "^3.4.31",
+    "vue-router": "^4.4.0",
+    "vuetify": "^3.6.14",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "ch.manu-brighter.shot-counter",
+    "productName": "Shöttli-Counter",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "server/server.js",
+      "server/config.js",
+      "main.cjs"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": "dmg"
+    }
   }
 }
