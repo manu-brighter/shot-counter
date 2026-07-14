@@ -54,8 +54,8 @@
     },
     "files": [
       "dist/**/*",
-      "server/server.js",
-      "server/config.js",
+      "server/server.cjs",
+      "server/config.cjs",
       "main.cjs"
     ],
     "win": {

@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const Database = require('better-sqlite3');
-const config = require('./config');
+const config = require('./config.cjs');
 
 const app = express();
 
@@ -120,7 +120,7 @@ app.use((err, _req, res, _next) => {
 
 // SPA fallback — after API routes, only in production Electron mode
 if (process.env.SERVE_STATIC) {
-  app.get('*', (req, res, next) => {
+  app.get(/.*/, (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
     res.sendFile(path.join(process.env.SERVE_STATIC, 'index.html'));
   });
