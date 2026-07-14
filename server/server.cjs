@@ -7,13 +7,13 @@ const config = require('./config.cjs');
 
 const app = express();
 
-if (process.env.SERVE_STATIC) {
-  app.use(express.static(process.env.SERVE_STATIC));
-}
-
 app.use(cors({ origin: config.FRONTEND_ORIGIN }));
 app.use(helmet());
 app.use(express.json());
+
+if (process.env.SERVE_STATIC) {
+  app.use(express.static(process.env.SERVE_STATIC));
+}
 
 const db = new Database(config.DB_PATH);
 db.exec(`
@@ -126,11 +126,12 @@ if (process.env.SERVE_STATIC) {
   });
 }
 
-const serverReady = new Promise((resolve) => {
-  app.listen(config.PORT, () => {
+const serverReady = new Promise((resolve, reject) => {
+  const server = app.listen(config.PORT, () => {
     console.log(`Server running on http://localhost:${config.PORT}`);
     resolve(config.PORT);
   });
+  server.on('error', reject);
 });
 
 module.exports = { serverReady };

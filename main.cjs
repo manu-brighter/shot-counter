@@ -92,12 +92,41 @@ function loadApp(port) {
   mainWindow.loadURL(isDev ? 'http://localhost:3000' : `http://localhost:${port}`);
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  const { serverReady } = startServer();
-  serverReady.then((port) => loadApp(port));
-});
+function showStartupError(err) {
+  const detail = err && err.code === 'EADDRINUSE'
+    ? `Port ${process.env.PORT ?? 5000} ist bereits belegt — läuft die App schon?`
+    : (err && err.message) || 'Unbekannter Fehler';
+  const html = LOADING_HTML
+    .replace('<div class="spinner"></div>', '<div class="title">⚠ Start fehlgeschlagen</div>')
+    .replace('<div class="title">Shöttli-Counter</div>', '')
+    .replace('wird gestartet …', detail);
+  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+}
 
-app.on('window-all-closed', () => {
+// One running instance owns the fixed server port — a second launch (e.g. an
+// impatient double-click during the portable's slow cold start) would otherwise
+// hit EADDRINUSE. Focus the existing window instead.
+if (!app.requestSingleInstanceLock()) {
   app.quit();
-});
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(() => {
+    createWindow();
+    try {
+      const { serverReady } = startServer();
+      serverReady.then((port) => loadApp(port)).catch(showStartupError);
+    } catch (err) {
+      showStartupError(err);
+    }
+  });
+
+  app.on('window-all-closed', () => {
+    app.quit();
+  });
+}
