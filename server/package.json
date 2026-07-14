@@ -2,20 +2,20 @@
   "name": "shot-counter-backend",
   "version": "1.0.0",
   "description": "Backend server for the Shot Counter app",
-  "main": "server.js",
+  "main": "server.cjs",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.cjs",
+    "dev": "nodemon server.cjs"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^5.0.0",
-    "helmet": "^8.2.0",
-    "mysql2": "^3.12.0"
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
