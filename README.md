@@ -7,7 +7,7 @@
 ![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white&labelColor=0a0a0a)&nbsp;
 ![Express](https://img.shields.io/badge/Express-5.0-f5f5f5?style=for-the-badge&logo=express&logoColor=0a0a0a&labelColor=0a0a0a)&nbsp;
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?style=for-the-badge&logo=sqlite&logoColor=white&labelColor=0a0a0a)&nbsp;
-![Electron](https://img.shields.io/badge/Electron-43-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)&nbsp;
+![Electron](https://img.shields.io/badge/Electron-42-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)&nbsp;
 ![Node](https://img.shields.io/badge/Node.js-%E2%89%A520-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0a0a0a)
 
 </div>
@@ -16,7 +16,28 @@
 
 > **Wer schiesst am meisten Shöttli?** Live-Rangliste für mehrere Teams — zählt, sortiert, blendet Gold.
 
-A real-time multi-team shot counter built for the Wamserfest. Teams are tracked with an atomic SQLite counter — no lost shots, no matter how many devices hit the buttons at once. Runs as a web app or as a standalone Windows desktop build (Electron).
+A real-time multi-team shot counter built for the Wamserfest. Teams are tracked with an atomic SQLite counter — no lost shots, no matter how many devices hit the buttons at once. Runs as a web app or as a standalone desktop build for **Windows & Linux** (Electron).
+
+<br>
+
+<div align="center">
+
+## ⬇ Download & run
+
+**No install of Node, a database, or anything else — just grab the file and start it.**
+
+[![Download Windows Installer](https://img.shields.io/badge/Windows-Installer%20(.exe)-2196f3?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0a0a)](https://github.com/manu-brighter/shot-counter/releases/latest/download/Shoettli-Counter-Setup.exe)
+&nbsp;
+[![Download Windows Portable](https://img.shields.io/badge/Windows-Portable%20(.exe)-90a4ae?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0a0a)](https://github.com/manu-brighter/shot-counter/releases/latest/download/Shoettli-Counter-Portable.exe)
+&nbsp;
+[![Download Linux AppImage](https://img.shields.io/badge/Linux-AppImage-b8860b?style=for-the-badge&logo=linux&logoColor=white&labelColor=0a0a0a)](https://github.com/manu-brighter/shot-counter/releases/latest/download/Shoettli-Counter.AppImage)
+
+<sub>These links always point at the newest [release](https://github.com/manu-brighter/shot-counter/releases/latest).</sub>
+
+</div>
+
+> **Windows:** the app isn't code-signed, so SmartScreen may warn on first launch — click **More info → Run anyway**. Prefer the **Installer** (starts in < 1 s); the portable re-extracts ~100 MB on every launch (20–30 s).
+> **Linux:** make it executable, then run it — `chmod +x Shoettli-Counter.AppImage && ./Shoettli-Counter.AppImage`.
 
 <br>
 
@@ -50,9 +71,9 @@ The three icons (add, subtract, delete) are inlined as SVG paths from `@mdi/js` 
 | **Icons** | `@mdi/js` SVG paths (no webfont) |
 | **Backend** | Node.js ≥20 · Express 5.0 |
 | **Database** | SQLite · better-sqlite3 12 (embedded, single file) |
-| **Desktop** | Electron 43 · packaged with electron-builder (NSIS + portable) |
+| **Desktop** | Electron 42 · packaged with electron-builder (Windows NSIS + portable, Linux AppImage) |
 | **Security** | helmet · CORS restricted to `FRONTEND_ORIGIN` · dotenv config |
-| **Fonts** | Google Fonts Roboto — weights 400 & 500 only, `font-display: swap` |
+| **Fonts** | Self-hosted Roboto (`@fontsource/roboto`) — weights 400 & 500 only |
 
 </div>
 
@@ -110,21 +131,36 @@ The SQLite file and `teams` table are created automatically on first start — n
 
 ## ✦ Desktop app (Electron)
 
-The app also ships as a standalone Windows desktop build — bundled Electron + Express + SQLite, no separate server process or database to install. The database lives in the user's `%APPDATA%\Shöttli-Counter\`.
+The app also ships as a standalone desktop build for Windows & Linux — bundled Electron + Express + SQLite, no separate server process or database to install. The database lives in the user's `%APPDATA%\Shöttli-Counter\` (Windows) or `~/.config/Shöttli-Counter/` (Linux).
 
 ```bash
 npm run electron:dev      # run the desktop app against the Vite dev server
-npm run electron:build    # produce installers in dist-electron/
+npm run electron:build    # produce installers in dist-electron/ (for the current OS)
 ```
 
-`electron:build` outputs two Windows artifacts:
+`electron:build` outputs:
 
-| Artifact | Startup | Use it when |
-|----------|---------|-------------|
-| `Shöttli-Counter Setup 1.0.0.exe` (NSIS installer) | **< 1 s** after install | **Recommended.** Installs once, launches instantly, adds a desktop shortcut. |
-| `Shöttli-Counter 1.0.0.exe` (portable) | **~20–30 s every launch** | No-install / USB-stick scenarios only. |
+| Artifact | OS | Startup | Use it when |
+|----------|----|---------|-------------|
+| `Shoettli-Counter-Setup.exe` (NSIS installer) | Windows | **< 1 s** after install | **Recommended.** Installs once, launches instantly, adds a desktop shortcut. |
+| `Shoettli-Counter-Portable.exe` (portable) | Windows | **~20–30 s every launch** | No-install / USB-stick scenarios only. |
+| `Shoettli-Counter.AppImage` | Linux | **< 1 s** | `chmod +x` once, then run. |
 
-> **Prefer the installer.** The portable re-extracts the full ~100 MB Electron payload to a temp directory on *every* launch, so it sits with only a loading screen for 20–30 s before the window is usable. That delay is inherent to the portable format — the installed build does the extraction once and then starts in under a second.
+> **Prefer the installer on Windows.** The portable re-extracts the full ~100 MB Electron payload to a temp directory on *every* launch, so it sits with only a loading screen for 20–30 s before the window is usable. That delay is inherent to the portable format — the installed build does the extraction once and then starts in under a second.
+
+### Releasing new builds
+
+electron-builder can't cross-build Linux from Windows, so releases run in CI. The [`Release`](.github/workflows/release.yml) workflow builds on Windows + Linux runners and publishes the artifacts to a GitHub Release whenever a version tag is pushed:
+
+```bash
+# bump "version" in package.json first, then:
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow creates a **draft** release — review the attached artifacts on the Releases page, then hit **Publish**. The download links at the top of this README always resolve to the newest published release.
+
+> **Native module note:** Electron is pinned to **42.x** on purpose. `better-sqlite3` runs in-process and must match the Electron ABI (v146); prebuilt binaries exist for that ABI on Windows & Linux, so no C++ compiler is needed to build — locally or in CI. Bumping to Electron 43+ would require either newer prebuilds or a full build toolchain.
 
 <br>
 

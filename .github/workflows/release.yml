@@ -1,0 +1,48 @@
+name: Release
+
+# Build desktop artifacts for Windows + Linux and publish them to a GitHub
+# Release. Triggered by pushing a version tag (e.g. v1.0.0); also runnable
+# manually from the Actions tab.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write # electron-builder needs this to create the release + upload assets
+
+jobs:
+  release:
+    strategy:
+      # Run one runner at a time so both jobs publish into the same release
+      # instead of racing to create it.
+      max-parallel: 1
+      matrix:
+        include:
+          - os: windows-latest
+            platform: --win
+          - os: ubuntu-latest
+            platform: --linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # postinstall runs `electron-builder install-app-deps`, which pulls the
+      # prebuilt better-sqlite3 binary for this runner's platform (Electron 42 /
+      # ABI v146) — no C++ compiler needed.
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Build & publish
+        run: npx electron-builder ${{ matrix.platform }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

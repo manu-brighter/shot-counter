@@ -3,6 +3,12 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
+  "description": "Shöttli-Counter — real-time multi-team shot counter (Vue 3 · Express 5 · SQLite), runs as a web app or standalone desktop build.",
+  "author": "Manuel Heller",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manu-brighter/shot-counter.git"
+  },
   "main": "main.cjs",
   "engines": {
     "node": ">=20"
@@ -30,7 +36,7 @@
     "@vitejs/plugin-vue": "^5.0.5",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
-    "electron": "^43.0.0",
+    "electron": "^42.6.2",
     "electron-builder": "^26.15.3",
     "eslint": "^9.14.0",
     "eslint-plugin-vue": "^9.30.0",
@@ -60,6 +66,7 @@
       "main.cjs"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -78,10 +85,36 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "artifactName": "Shoettli-Counter-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Shoettli-Counter-Portable.${ext}"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "appImage": {
+      "artifactName": "Shoettli-Counter.${ext}"
     },
     "mac": {
       "target": "dmg"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "manu-brighter",
+        "repo": "shot-counter"
+      }
+    ]
   }
 }
