@@ -4,6 +4,10 @@
  * Bootstraps Vuetify and other plugins then mounts the App`
  */
 
+// Fonts — self-hosted so they work offline and without CSP exceptions
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+
 // Plugins
 import { registerPlugins } from '@/plugins'
 
