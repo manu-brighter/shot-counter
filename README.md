@@ -1,4 +1,4 @@
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0a,40:1a1a1a,70:b8860b,100:ffd700&height=200&section=header&text=SHOT-COUNTER&fontSize=48&fontColor=ffffff&fontAlignY=38&desc=Multi-Team%20Shot%20Counter%20%C2%B7%20Vue%203%20%C2%B7%20Express%205%20%C2%B7%20SQLite&descAlignY=58&descColor=ffd700&animation=fadeIn" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0a,40:1a1a1a,70:b8860b,100:ffd700&height=200&section=header&text=SHOT-COUNTER&fontSize=48&fontColor=ffffff&fontAlignY=38&desc=Multi-Team%20Party%20Scoreboard%20%C2%B7%20Vue%203%20%C2%B7%20Express%205%20%C2%B7%20SQLite&descAlignY=58&descColor=ffd700&animation=fadeIn" width="100%" />
 
 <div align="center">
 
@@ -14,9 +14,9 @@
 
 <br>
 
-> **Who downs the most shots?** A live leaderboard for multiple teams — counts, ranks, glows gold.
+> **Who downs the most shots?** A live party scoreboard for any number of teams — counts, ranks, celebrates.
 
-A real-time multi-team shot counter built for the Wamserfest. Teams are tracked with an atomic SQLite counter — no lost shots, no matter how many devices hit the buttons at once. Runs as a web app or as a standalone desktop build for **Windows & Linux** (Electron). The interface speaks **English and German**, switchable in-app.
+A real-time multi-team shot counter for parties, birthdays, festivals and game nights. One screen runs the board, everyone else joins from their phone — a **QR code in the app** gets them in, and every tap shows up on all devices instantly. Teams are tracked with an atomic SQLite counter, so no shot is lost no matter how many thumbs hammer the buttons at once. Runs as a web app or as a standalone desktop build for **Windows & Linux** (Electron). The interface speaks **English and German**, switchable in-app.
 
 <br>
 
@@ -46,17 +46,23 @@ A real-time multi-team shot counter built for the Wamserfest. Teams are tracked 
 
 ## ✦ What makes it interesting
 
+**Live on every device — no reloads**
+The server pushes the team list to all connected clients over **Server-Sent Events** on every change. Someone taps +1 on their phone and the board on the TV re-ranks itself in the same second — rows glide to their new position (FLIP animation), the counter rolls like an odometer, and taking over the lead fires gold confetti. A slow polling fallback covers dropped connections; `prefers-reduced-motion` disables all of it.
+
+**Join by QR code**
+The join dialog shows the machine's LAN address as a scannable QR code — no `ipconfig`, no typing IPs on a phone keyboard. Scan, tap, count.
+
 **Atomic counter — no lost shots**
 Concurrent button presses from multiple devices don't race. The backend uses `UPDATE teams SET counter = counter + 1 WHERE id = ?` directly in SQL — no read-modify-write, no stale overwrites. Decrement clamps at zero via `CASE WHEN counter > 0 THEN counter - 1 ELSE 0 END`.
 
 **Embedded, zero-setup database**
 `better-sqlite3` runs in-process against a single file — no DB server to install or keep alive. Its synchronous API means no connection pool and no async gap between read and write. The desktop build stores the file in `%APPDATA%\Shot-Counter\`.
 
-**Gold rank row**
-Rank 1 gets a `#ffd700` background with `#7a5f00` text — WCAG AA contrast. The glow animation runs on `filter: drop-shadow()` (GPU composited, no layout repaints). Automatically disabled via `prefers-reduced-motion`.
+**A scoreboard, not a data table**
+The UI is built like a late-night bar scoreboard: warm near-black with a subtly animated backdrop, amber accents, condensed display type (Anton) for the digits, and gold/silver/bronze medals for the top three — which only appear once a team has actually scored. A card-size slider compacts the board down to ~30 teams on one screen, big displays (beamer!) scale it up, fullscreen is one click away, and clicking any number lets you type a count directly. Fonts are self-hosted (`@fontsource`), so the design works fully offline.
 
 **Zero webfont overhead for icons**
-The three icons (add, subtract, delete) are inlined as SVG paths from `@mdi/js` — no 350 KB `@mdi/font` webfont in the bundle.
+All icons are inlined as SVG paths from `@mdi/js` — no 350 KB `@mdi/font` webfont in the bundle.
 
 **Bilingual, switchable at any time**
 English (default) and German, toggled with the **EN/DE** switch in the header and remembered in `localStorage`. One `vue-i18n` instance backs both the app's own strings and Vuetify's component strings via `createVueI18nAdapter`, so a single switch moves everything — including `<html lang>`. The language is deliberately *not* chosen at install time: the portable build and the AppImage have no installer to ask, and a party app gets passed around.
@@ -69,7 +75,7 @@ English (default) and German, toggled with the **EN/DE** switch in the header an
 
 The desktop app is **offline** — it never talks to the internet, ships no telemetry and loads no CDNs. But it isn't network-*silent*: the app is an embedded Express server that the Electron window loads from `http://localhost:5000`, and that server listens on every network interface. This is why Windows asks for firewall permission on first launch.
 
-The upside is that it doubles as a LAN party mode. Allow the prompt for private networks, find your machine's IP (`ipconfig` on Windows, `ip a` on Linux), and everyone on the same Wi-Fi can open `http://<your-ip>:5000` on their phone and tap the same counters — the atomic SQLite counter is what makes concurrent taps safe.
+The upside is the LAN party mode. Allow the prompt for private networks, hit **Join** in the header, and everyone on the same Wi-Fi scans the QR code on their phone — same board, same buttons, live everywhere. The atomic SQLite counter is what makes concurrent taps safe.
 
 > **There is no authentication.** Anyone who can reach the port can change the counters. That's fine on a home network and *not* fine on open public Wi-Fi. Deny the firewall prompt (or allow private networks only) and the app still works normally on the machine itself — Windows never filters loopback traffic.
 
@@ -84,13 +90,15 @@ The upside is that it doubles as a LAN party mode. Allow the prompt for private 
 | Layer | Technology |
 |---|---|
 | **Frontend** | Vue 3.4 · Vuetify 3.6 · Vite 5.4 |
+| **Live sync** | Server-Sent Events (`EventSource`) + polling fallback |
 | **Icons** | `@mdi/js` SVG paths (no webfont) |
+| **QR & confetti** | `uqr` (offline SVG QR) · `canvas-confetti` |
 | **i18n** | vue-i18n 11 · English (default) + German, shared with Vuetify's locale |
 | **Backend** | Node.js ≥20 · Express 5.0 |
 | **Database** | SQLite · better-sqlite3 12 (embedded, single file) |
 | **Desktop** | Electron 42 · packaged with electron-builder (Windows NSIS + portable, Linux AppImage) |
 | **Security** | helmet · CORS restricted to `FRONTEND_ORIGIN` · dotenv config |
-| **Fonts** | Self-hosted Roboto (`@fontsource/roboto`) — weights 400 & 500 only |
+| **Fonts** | Self-hosted Anton (display) + Barlow (UI) via `@fontsource` |
 
 </div>
 
@@ -188,14 +196,18 @@ The workflow creates a **draft** release — review the attached artifacts on th
 | Method | Endpoint | Body | Description |
 |--------|----------|------|-------------|
 | `GET` | `/api/health` | — | DB ping — returns `{ status, db }` |
+| `GET` | `/api/events` | — | SSE stream — pushes the full team list on every change |
+| `GET` | `/api/server-info` | — | LAN IPv4 addresses + port, feeds the QR join dialog |
 | `GET` | `/api/teams` | — | All teams, sorted by counter DESC |
 | `POST` | `/api/teams` | `{ name }` | Add a team (counter starts at 0) |
 | `PUT` | `/api/teams/:id` | `{ name }` | Rename a team |
 | `DELETE` | `/api/teams/:id` | — | Delete a team |
 | `POST` | `/api/teams/:id/increment` | — | Atomic counter +1 |
 | `POST` | `/api/teams/:id/decrement` | — | Atomic counter −1 (floor 0) |
+| `PUT` | `/api/teams/:id/counter` | `{ counter }` | Set a counter to an absolute value |
+| `POST` | `/api/teams/reset` | — | New round — reset every counter to 0 |
 
-All responses are JSON. Errors return `{ error }` with appropriate HTTP status codes (`400` validation, `404` not found, `500` server error).
+All responses are JSON (the SSE stream sends JSON `teams` events). Errors return `{ error }` with appropriate HTTP status codes (`400` validation, `404` not found, `500` server error).
 
 <br>
 
@@ -204,15 +216,20 @@ All responses are JSON. Errors return `{ error }` with appropriate HTTP status c
 ## ✦ Notable source files
 
 ```
-src/pages/index.vue          Single-file app — table, dialogs, counter logic, CSS
-src/locales/en.js            English messages (default) — incl. Vuetify's $vuetify strings
-src/locales/de.js            German messages — keys mirror en.js exactly
-src/plugins/i18n.js          vue-i18n setup — default locale, localStorage, <html lang>
-src/plugins/vuetify.js       Vuetify 3 config — SVG icons, vue-i18n locale adapter
-server/server.cjs            Express 5 API — SQLite, routes, atomic counter endpoints
-server/config.cjs            All env vars with dotenv + ?? fallbacks
-server/.env.example          Environment variable reference
-main.cjs                     Electron entry — starts server, splash, loads app
+src/pages/index.vue               App shell — header, leaderboard, dialogs, confetti
+src/components/TeamRow.vue        One leaderboard row — medals, inline rename, +/− buttons
+src/components/ShotOdometer.vue   Rolling digit counter
+src/components/JoinDialog.vue     QR code + LAN addresses for joining by phone
+src/composables/useTeams.js       Data layer — REST mutations, SSE live sync, fallback polling
+src/styles/app.scss               Design tokens + overrides for teleported Vuetify components
+src/locales/en.js                 English messages (default) — incl. Vuetify's $vuetify strings
+src/locales/de.js                 German messages — keys mirror en.js exactly
+src/plugins/i18n.js               vue-i18n setup — default locale, localStorage, <html lang>
+src/plugins/vuetify.js            Vuetify 3 config — scoreboard theme, SVG icons, locale adapter
+server/server.cjs                 Express 5 API — SQLite, routes, atomic counters, SSE broadcast
+server/config.cjs                 All env vars with dotenv + ?? fallbacks
+server/.env.example               Environment variable reference
+main.cjs                          Electron entry — starts server, splash, loads app
 ```
 
 ### Adding a language

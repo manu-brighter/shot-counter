@@ -17,6 +17,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Test-drive artifacts (Playwright MCP screenshots/snapshots)
+.playwright-mcp/
+
 # Editor directories and files
 .idea
 .vscode

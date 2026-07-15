@@ -44,9 +44,9 @@ This produces two very different runtime shapes:
 | `electron:dev` | Vite `:3000` | `:5000` | cross-origin, enforced |
 | packaged app | Express `:5000` | `:5000` | same-origin, not enforced |
 
-`src/pages/index.vue` therefore sets `API_BASE` to `''` in production (relative, same-origin) and `http://localhost:5000` only in dev. **Do not hardcode the port into the frontend** — that coupling was deliberately removed.
+`src/composables/useTeams.js` therefore sets `API_BASE` to `''` in production (relative, same-origin) and `http://localhost:5000` only in dev; a `VITE_API_BASE_URL` env var overrides both. **Do not hardcode the port into the frontend** — that coupling was deliberately removed.
 
-Because of this split, **anything CSP-, CORS-, or static-serving-related is invisible in `electron:dev`** and only appears in the packaged build. Test those against `npx electron .`, not the dev server.
+Because of this split, **anything CSP-, CORS-, or static-serving-related is invisible in `electron:dev`** and only appears in the packaged build. Test those against `npx electron .`, not the dev server. The QR join dialog is also a prod-shape feature: in `electron:dev` it points phones at `http://<ip>:5000`, which serves no SPA there (`SERVE_STATIC` unset).
 
 ### Module systems
 
@@ -81,7 +81,14 @@ The `Release` workflow (`.github/workflows/release.yml`) triggers **only on `v*.
 - **Artifact names are version-less on purpose** (`Shot-Counter-Setup.exe`, not `Shot-Counter-1.0.0-Setup.exe`). The README links to `releases/latest/download/<name>`, which only works with stable names. Renaming an artifact breaks every README download button.
 - **The server binds all interfaces, not loopback.** `app.listen(PORT)` without a host is intentional — it is what lets phones on the same Wi-Fi join at `http://<ip>:5000`, and it is why Windows prompts for firewall permission on first launch. There is no auth; that trade-off is documented in the README and was chosen deliberately.
 - **`helmet()`'s default CSP is fine as-is.** Its default `style-src` is `'self' https: 'unsafe-inline'`, so Vuetify's runtime-injected styles are *not* blocked. Verify against the real header before "fixing" a CSP problem here.
-- **`src/pages/index.vue` renders its own empty-state row.** The `#body` slot replaces the entire tbody, so `v-data-table`'s `no-data-text` prop can never render and must not be re-added.
+- **Confetti is fired through a manually created instance with `useWorker: false`** (`src/pages/index.vue`). `canvas-confetti`'s default `confetti()` spawns a blob worker, which helmet's CSP blocks in the packaged app — invisible in `electron:dev`, a console warning in production. Don't "simplify" it back to the default export.
+- **Medal styling (gold/silver/bronze rows) only applies when a team's counter is > 0** — an all-zero board deliberately shows no leader. That check lives in `TeamRow.vue`'s `rankClass` and is not a bug.
+
+## Styling gotchas
+
+- **Vuetify's stylesheet loads *after* `src/styles/app.scss`** (module import order: `app.scss` in `main.js`, `vuetify/styles` inside `plugins/vuetify.js`). Equal-specificity overrides of Vuetify classes silently lose. Either use Vuetify SASS variables in `src/styles/settings.scss`, or win specificity explicitly (see the `.v-overlay .v-overlay__scrim` rule — the scrim is tinted with `on-surface`, which is *cream* in this theme, so without that override dialogs brighten the backdrop instead of darkening it).
+- **Dialogs, menus and snackbars teleport to `<body>`**, outside every page component — scoped styles (even with `:deep`) can't reach them. Their overrides belong in `src/styles/app.scss` (`.sc-dialog-card`, `.sc-menu`).
+- The design tokens exist twice on purpose: as `--sc-*` CSS vars in `app.scss` for custom CSS, and as the `scoreboard` Vuetify theme in `plugins/vuetify.js` for component colors. Change both when touching the palette.
 
 ## Verifying a change
 
@@ -91,4 +98,6 @@ There are no automated tests, so drive the app:
 npm run build && npx electron .   # serves the prod bundle on :5000 with helmet
 ```
 
-Then exercise the flow — a browser pointed at `http://localhost:5000` hits the same server, same CSP and same bundle as the Electron window, which makes it usable for driving the UI. Check the console for errors; the app should produce none.
+**Set `DB_PATH` to a scratch file first** (PowerShell: `$env:DB_PATH = "$env:TEMP\shot_counter_test.db"`). Without it the packaged app opens the user's real database in `%APPDATA%\Shot-Counter\`, and exercising delete/reset flows destroys real party data. `main.cjs` respects a pre-set `DB_PATH` for exactly this purpose.
+
+Then exercise the flow — a browser pointed at `http://localhost:5000` hits the same server, same CSP and same bundle as the Electron window, which makes it usable for driving the UI. Multi-device live sync is testable with two browser tabs (SSE pushes to both). Check the console for errors; the app should produce none.

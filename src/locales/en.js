@@ -16,12 +16,9 @@ export default {
     de: 'German',
   },
 
-  table: {
-    rank: 'Rank',
-    teamName: 'Team name',
-    shots: 'Shots',
-    actions: 'Actions',
-    noTeams: 'No teams yet.',
+  stats: {
+    totalShots: 'Total shots',
+    reconnecting: 'Reconnecting …',
   },
 
   actions: {
@@ -32,11 +29,22 @@ export default {
     addShot: 'Add shot',
     removeShot: 'Remove shot',
     editTeamName: 'Edit team name',
-    deleteTeam: 'Delete team {name}',
+    rename: 'Rename',
+    delete: 'Delete',
+    teamOptions: 'Options for {name}',
+    join: 'Join',
+    newRound: 'New round',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    setCount: 'Set count directly',
+  },
+
+  board: {
+    density: 'Card size',
   },
 
   addDialog: {
-    title: 'Enter team name',
+    title: 'Add a team',
     label: 'Team name',
   },
 
@@ -45,9 +53,27 @@ export default {
     text: 'Do you really want to delete the team {name}?',
   },
 
+  resetDialog: {
+    title: 'Start a new round?',
+    text: 'All counters go back to 0. The teams stay on the board.',
+  },
+
+  joinDialog: {
+    title: 'Join on your phone',
+    scanHint: 'Connect to the same Wi-Fi, then scan:',
+    note: 'Anyone on this network can tap along — no login needed.',
+    unavailable: 'No network address found. Make sure this device is connected to a Wi-Fi or LAN.',
+  },
+
+  empty: {
+    title: 'No teams yet',
+    hint: 'Add the first team and get the round started.',
+  },
+
   feedback: {
     teamAdded: 'Team added.',
     teamDeleted: 'Team deleted.',
+    roundReset: 'Counters reset.',
     nameRequired: 'Please enter a team name.',
     nameEmpty: 'The team name must not be empty.',
     loadFailed: 'Failed to load teams.',
@@ -55,5 +81,12 @@ export default {
     deleteFailed: 'Failed to delete the team.',
     counterFailed: 'Failed to update the counter.',
     renameFailed: 'Failed to save the team name.',
+    resetFailed: 'Failed to reset the counters.',
+    countInvalid: 'Please enter a valid number.',
+  },
+
+  footer: {
+    credit: 'Made by',
+    github: 'Free on GitHub',
   },
 };

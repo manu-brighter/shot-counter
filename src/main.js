@@ -5,8 +5,14 @@
  */
 
 // Fonts — self-hosted so they work offline and without CSP exceptions
-import '@fontsource/roboto/400.css'
-import '@fontsource/roboto/500.css'
+import '@fontsource/anton'
+import '@fontsource/barlow/400.css'
+import '@fontsource/barlow/500.css'
+import '@fontsource/barlow/600.css'
+import '@fontsource/barlow/700.css'
+
+// Global design tokens + overrides for teleported Vuetify components
+import '@/styles/app.scss'
 
 // Plugins
 import { registerPlugins } from '@/plugins'

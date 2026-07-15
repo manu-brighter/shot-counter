@@ -1,0 +1,106 @@
+/**
+ * src/styles/app.scss
+ *
+ * Global design tokens and the few Vuetify overrides that cannot live in
+ * scoped component styles (dialogs, menus and snackbars teleport to <body>).
+ * The palette mirrors the `scoreboard` Vuetify theme in plugins/vuetify.js.
+ */
+
+:root {
+  --sc-ink: #0e0b08;
+  --sc-surface: #1a140d;
+  --sc-surface-2: #241b10;
+  --sc-line: rgba(246, 238, 220, 0.08);
+  --sc-amber: #ffb627;
+  --sc-amber-ink: #2a1b02;
+  --sc-amber-soft: rgba(255, 182, 39, 0.14);
+  --sc-cream: #f6eedc;
+  --sc-faded: #a89880;
+  --sc-danger: #e5484d;
+  --sc-gold: #ffc93c;
+  --sc-silver: #c9d1dc;
+  --sc-bronze: #d08a4e;
+  --sc-display: 'Anton', 'Arial Narrow', 'Segoe UI', sans-serif;
+  --sc-ease-snap: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sc-ease-smooth: cubic-bezier(0.45, 0.05, 0.15, 1);
+}
+
+html {
+  background: var(--sc-ink);
+  color-scheme: dark;
+}
+
+::selection {
+  background: var(--sc-amber);
+  color: var(--sc-amber-ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(246, 238, 220, 0.18) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sc-amber);
+  outline-offset: 2px;
+}
+
+/* Vuetify tints scrims with on-surface (cream here), which lightens the
+   backdrop; the extra .v-overlay wins the specificity tie against that. */
+.v-overlay .v-overlay__scrim {
+  background: #060403;
+  opacity: 0.72;
+}
+
+/* Dialog cards */
+.sc-dialog-card {
+  border: 1px solid var(--sc-line) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, var(--sc-surface-2), var(--sc-surface)) !important;
+  padding: 10px 6px;
+}
+
+.sc-dialog-card .v-card-title {
+  font-family: var(--sc-display);
+  font-weight: 400;
+  font-size: 1.3rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sc-cream);
+  white-space: normal;
+}
+
+.sc-dialog-card .v-card-text {
+  color: var(--sc-faded);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+/* Menus */
+.sc-menu {
+  border: 1px solid var(--sc-line);
+  border-radius: 14px !important;
+  background: var(--sc-surface-2) !important;
+  min-width: 180px;
+}
+
+.sc-menu .v-list-item-title {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+/* Snackbars */
+.v-snackbar__wrapper {
+  border-radius: 14px !important;
+  font-weight: 500;
+}
+
+/* Confetti canvas — appended to <body> by pages/index.vue */
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
