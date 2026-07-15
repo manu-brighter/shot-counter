@@ -38,6 +38,7 @@ A real-time multi-team shot counter built for the Wamserfest. Teams are tracked 
 
 > **Windows:** the app isn't code-signed, so SmartScreen may warn on first launch — click **More info → Run anyway**. Prefer the **Installer** (starts in < 1 s); the portable re-extracts ~100 MB on every launch (20–30 s).
 > **Linux:** make it executable, then run it — `chmod +x Shot-Counter.AppImage && ./Shot-Counter.AppImage`.
+> **Firewall:** Windows will ask for network permission on first launch. That's expected — see [Playing on multiple devices](#-playing-on-multiple-devices). Allow it for **private networks** only. Nothing ever leaves for the internet, and denying the prompt still leaves the app fully working on the machine itself.
 
 <br>
 
@@ -59,6 +60,18 @@ The three icons (add, subtract, delete) are inlined as SVG paths from `@mdi/js` 
 
 **Bilingual, switchable at any time**
 English (default) and German, toggled with the **EN/DE** switch in the header and remembered in `localStorage`. One `vue-i18n` instance backs both the app's own strings and Vuetify's component strings via `createVueI18nAdapter`, so a single switch moves everything — including `<html lang>`. The language is deliberately *not* chosen at install time: the portable build and the AppImage have no installer to ask, and a party app gets passed around.
+
+<br>
+
+---
+
+## ✦ Playing on multiple devices
+
+The desktop app is **offline** — it never talks to the internet, ships no telemetry and loads no CDNs. But it isn't network-*silent*: the app is an embedded Express server that the Electron window loads from `http://localhost:5000`, and that server listens on every network interface. This is why Windows asks for firewall permission on first launch.
+
+The upside is that it doubles as a LAN party mode. Allow the prompt for private networks, find your machine's IP (`ipconfig` on Windows, `ip a` on Linux), and everyone on the same Wi-Fi can open `http://<your-ip>:5000` on their phone and tap the same counters — the atomic SQLite counter is what makes concurrent taps safe.
+
+> **There is no authentication.** Anyone who can reach the port can change the counters. That's fine on a home network and *not* fine on open public Wi-Fi. Deny the firewall prompt (or allow private networks only) and the app still works normally on the machine itself — Windows never filters loopback traffic.
 
 <br>
 
