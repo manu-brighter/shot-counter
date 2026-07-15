@@ -1,7 +1,18 @@
 # Multi-OS Release Pipeline — Design
 
 **Date:** 2026-07-14
-**Status:** Approved
+**Status:** Approved — **partially superseded, see below**
+
+> **Superseded:** the publishing step described here (`electron-builder --publish always`
+> from each matrix job) does not work. electron-builder uploads artifacts in parallel and
+> each upload independently resolves the target release, so concurrent uploads each create
+> their own — the first real run produced two draft releases from a single Windows job,
+> with the assets split across both. `max-parallel`/`concurrency` cannot fix this; the race
+> is inside one electron-builder invocation.
+>
+> The pipeline now builds with `--publish never`, uploads the artifacts, and creates the
+> release once from a separate `publish` job. See `.github/workflows/release.yml` and the
+> release section of `CLAUDE.md`. The goal and OS-scope decisions below still hold.
 
 ## Goal
 
