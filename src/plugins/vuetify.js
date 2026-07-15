@@ -13,13 +13,16 @@ import { mdiPlus, mdiMinus, mdiDelete } from '@mdi/js'
 
 // Composables
 import { createVuetify } from 'vuetify'
-import { de } from 'vuetify/locale'
+import { createVueI18nAdapter } from 'vuetify/locale/adapters/vue-i18n'
+import { useI18n } from 'vue-i18n'
+import i18n from './i18n'
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+  // Vuetify's own component strings come from the `$vuetify` key in the
+  // vue-i18n messages, so switching the app locale switches both at once.
   locale: {
-    locale: 'de',
-    messages: { de },
+    adapter: createVueI18nAdapter({ i18n, useI18n }),
   },
   theme: {
     defaultTheme: 'dark',

@@ -3,22 +3,51 @@
     <v-card
       class="mx-auto my-5 score-card"
     >
-      <v-card-title>
+      <v-card-title class="d-flex align-center ga-4">
+        <!-- Brand name — deliberately not translated. -->
         <h1 class="card-title-heading">
-          SHÖTTLI-COUNTER
+          SHOT-COUNTER
         </h1>
+        <v-spacer />
+        <v-btn-toggle
+          v-model="locale"
+          :aria-label="t('language.label')"
+          mandatory
+          density="compact"
+          variant="outlined"
+          divided
+        >
+          <v-btn
+            v-for="code in SUPPORTED_LOCALES"
+            :key="code"
+            :value="code"
+            :aria-label="t(`language.${code}`)"
+            size="small"
+          >
+            {{ code.toUpperCase() }}
+          </v-btn>
+        </v-btn-toggle>
       </v-card-title>
       <v-card-text>
         <v-data-table
           :items="rankedTeams"
           :headers="headers"
           :loading="loading"
-          :no-data-text="'Keine Teams vorhanden.'"
           class="elevation-1"
           density="compact"
           hide-default-footer
         >
+          <!-- This slot replaces the whole tbody, so the empty state has to be
+               rendered here — v-data-table's own no-data-text never shows. -->
           <template #body="{ items }">
+            <tr v-if="!items.length && !loading">
+              <td
+                :colspan="headers.length"
+                class="text-center text-medium-emphasis py-8"
+              >
+                {{ t('table.noTeams') }}
+              </td>
+            </tr>
             <tr
               v-for="(team, index) in items"
               :key="team.id"
@@ -30,7 +59,7 @@
                   v-if="editingTeamId !== team.id"
                   type="button"
                   class="team-name-btn"
-                  @click="editingTeamId = team.id"
+                  @click="startEditing(team)"
                 >
                   {{ team.name }}
                   <v-icon
@@ -47,7 +76,7 @@
                   density="compact"
                   hide-details="true"
                   autofocus
-                  aria-label="Teamname bearbeiten"
+                  :aria-label="t('actions.editTeamName')"
                   @blur="saveTeamName(team)"
                   @keyup.enter="saveTeamName(team)"
                 />
@@ -67,16 +96,16 @@
                 <v-btn
                   size="x-large"
                   icon
-                  aria-label="Treffer hinzufügen"
-                  @click="incrementTeam(team)"
+                  :aria-label="t('actions.addShot')"
+                  @click="adjustCounter(team, 'increment')"
                 >
                   <v-icon>$plus</v-icon>
                 </v-btn>
                 <v-btn
                   size="x-large"
                   icon
-                  aria-label="Treffer entfernen"
-                  @click="decrementTeam(team)"
+                  :aria-label="t('actions.removeShot')"
+                  @click="adjustCounter(team, 'decrement')"
                 >
                   <v-icon>$minus</v-icon>
                 </v-btn>
@@ -85,7 +114,7 @@
                   icon
                   color="error"
                   class="ml-4"
-                  :aria-label="`Team ${team.name} löschen`"
+                  :aria-label="t('actions.deleteTeam', { name: team.name })"
                   @click="openConfirmDeleteDialog(team)"
                 >
                   <v-icon>$delete</v-icon>
@@ -100,7 +129,7 @@
           color="primary"
           @click="openDialog"
         >
-          Team hinzufügen
+          {{ t('actions.addTeam') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -110,11 +139,11 @@
       max-width="400"
     >
       <v-card>
-        <v-card-title>Team Name eingeben</v-card-title>
+        <v-card-title>{{ t('addDialog.title') }}</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="newTeam.name"
-            label="Teamname eingeben"
+            :label="t('addDialog.label')"
             variant="outlined"
             density="compact"
             @keyup.enter="addTeam"
@@ -125,7 +154,7 @@
             variant="text"
             @click="closeDialog"
           >
-            Abbrechen
+            {{ t('actions.cancel') }}
           </v-btn>
           <v-btn
             color="primary"
@@ -133,7 +162,7 @@
             :disabled="submitting"
             @click="addTeam"
           >
-            Bestätigen
+            {{ t('actions.confirm') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -144,22 +173,30 @@
       max-width="400"
     >
       <v-card>
-        <v-card-title>Team löschen?</v-card-title>
+        <v-card-title>{{ t('deleteDialog.title') }}</v-card-title>
         <v-card-text>
-          Möchtest du das Team <strong>{{ pendingDeleteTeam?.name }}</strong> wirklich löschen?
+          <i18n-t
+            keypath="deleteDialog.text"
+            tag="span"
+            scope="global"
+          >
+            <template #name>
+              <strong>{{ pendingDeleteTeam?.name }}</strong>
+            </template>
+          </i18n-t>
         </v-card-text>
         <v-card-actions>
           <v-btn
             variant="text"
             @click="cancelDelete"
           >
-            Abbrechen
+            {{ t('actions.cancel') }}
           </v-btn>
           <v-btn
             color="error"
             @click="confirmDelete"
           >
-            Bestätigen
+            {{ t('actions.confirm') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -177,7 +214,7 @@
           variant="text"
           @click="snackbar = false"
         >
-          Schliessen
+          {{ t('actions.close') }}
         </v-btn>
       </template>
     </v-snackbar>
@@ -186,15 +223,23 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
+import { SUPPORTED_LOCALES } from '@/plugins/i18n';
 
-const headers = [
-  { title: 'Platz', key: 'rank', sortable: false },
-  { title: 'Teamname', key: 'name' },
-  { title: 'Treffer', key: 'counter' },
-  { title: 'Aktionen', key: 'actions', sortable: false },
-];
+const { t, locale } = useI18n();
+
+// Relative in production: the packaged app serves the SPA from the same Express
+// instance that hosts the API, so the port needn't be baked into the bundle.
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ?? (import.meta.env.DEV ? 'http://localhost:5000' : '');
+
+const headers = computed(() => [
+  { title: t('table.rank'), key: 'rank', sortable: false },
+  { title: t('table.teamName'), key: 'name' },
+  { title: t('table.shots'), key: 'counter' },
+  { title: t('table.actions'), key: 'actions', sortable: false },
+]);
 
 const teams = ref([]);
 const addTeamDialog = ref(false);
@@ -202,6 +247,7 @@ const confirmDeleteDialog = ref(false);
 const newTeam = ref({ name: '' });
 const pendingDeleteId = ref(null);
 const editingTeamId = ref(null);
+const editingOriginalName = ref('');
 const loading = ref(false);
 const submitting = ref(false);
 
@@ -219,7 +265,7 @@ const rankedTeams = computed(() => {
   return [...teams.value].sort((a, b) => b.counter - a.counter || a.id - b.id);
 });
 
-const pendingDeleteTeam = computed(() => teams.value.find((t) => t.id === pendingDeleteId.value));
+const pendingDeleteTeam = computed(() => teams.value.find((item) => item.id === pendingDeleteId.value));
 
 const fetchTeams = async () => {
   loading.value = true;
@@ -229,7 +275,7 @@ const fetchTeams = async () => {
     teams.value = await res.json();
   } catch (err) {
     console.error('Error fetching teams:', err);
-    showSnackbar('Fehler beim Laden der Teams.', 'error');
+    showSnackbar(t('feedback.loadFailed'), 'error');
   } finally {
     loading.value = false;
   }
@@ -237,7 +283,7 @@ const fetchTeams = async () => {
 
 const addTeam = async () => {
   if (!newTeam.value.name.trim()) {
-    showSnackbar('Bitte einen Teamnamen eingeben.', 'error');
+    showSnackbar(t('feedback.nameRequired'), 'error');
     return;
   }
   if (submitting.value) return;
@@ -251,13 +297,18 @@ const addTeam = async () => {
     if (!res.ok) throw new Error(await res.text());
     closeDialog();
     await fetchTeams();
-    showSnackbar('Team hinzugefügt.');
+    showSnackbar(t('feedback.teamAdded'));
   } catch (err) {
     console.error('Error adding team:', err);
-    showSnackbar('Fehler beim Hinzufügen des Teams.', 'error');
+    showSnackbar(t('feedback.addFailed'), 'error');
   } finally {
     submitting.value = false;
   }
+};
+
+const startEditing = (team) => {
+  editingTeamId.value = team.id;
+  editingOriginalName.value = team.name;
 };
 
 const openConfirmDeleteDialog = (team) => {
@@ -276,61 +327,62 @@ const confirmDelete = async () => {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(await res.text());
-    showSnackbar('Team gelöscht.');
+    showSnackbar(t('feedback.teamDeleted'));
     await fetchTeams();
   } catch (err) {
     console.error('Error deleting team:', err);
-    showSnackbar('Fehler beim Löschen des Teams.', 'error');
+    showSnackbar(t('feedback.deleteFailed'), 'error');
   } finally {
     cancelDelete();
   }
 };
 
-async function incrementTeam(team) {
+async function adjustCounter(team, direction) {
+  if (direction === 'decrement' && team.counter <= 0) return;
   try {
-    const res = await fetch(`${API_BASE}/api/teams/${team.id}/increment`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/api/teams/${team.id}/${direction}`, { method: 'POST' });
     if (!res.ok) throw new Error(await res.text());
     const updated = await res.json();
-    const idx = teams.value.findIndex((t) => t.id === team.id);
+    const idx = teams.value.findIndex((item) => item.id === team.id);
     if (idx !== -1) teams.value[idx].counter = updated.counter;
   } catch (err) {
-    console.error(err);
-    showSnackbar('Fehler beim Aktualisieren des Zählers.', 'error');
-  }
-}
-
-async function decrementTeam(team) {
-  if (team.counter <= 0) return;
-  try {
-    const res = await fetch(`${API_BASE}/api/teams/${team.id}/decrement`, { method: 'POST' });
-    if (!res.ok) throw new Error(await res.text());
-    const updated = await res.json();
-    const idx = teams.value.findIndex((t) => t.id === team.id);
-    if (idx !== -1) teams.value[idx].counter = updated.counter;
-  } catch (err) {
-    console.error(err);
-    showSnackbar('Fehler beim Aktualisieren des Zählers.', 'error');
+    console.error(`Error running ${direction}:`, err);
+    showSnackbar(t('feedback.counterFailed'), 'error');
   }
 }
 
 const saveTeamName = async (team) => {
   if (editingTeamId.value !== team.id) return;
-  if (!team.name.trim()) {
-    editingTeamId.value = null;
-    showSnackbar('Teamname darf nicht leer sein.', 'error');
+
+  // Leave edit mode synchronously: @keyup.enter also triggers @blur, and
+  // without this both would fire their own request.
+  editingTeamId.value = null;
+
+  const original = editingOriginalName.value;
+  const name = team.name.trim();
+
+  if (!name) {
+    team.name = original;
+    showSnackbar(t('feedback.nameEmpty'), 'error');
     return;
   }
+  if (name === original) {
+    team.name = original;
+    return;
+  }
+
+  team.name = name;
   try {
     const res = await fetch(`${API_BASE}/api/teams/${team.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: team.name }),
+      body: JSON.stringify({ name }),
     });
     if (!res.ok) throw new Error(await res.text());
-    editingTeamId.value = null;
   } catch (err) {
     console.error('Error updating team name:', err);
-    showSnackbar('Fehler beim Speichern des Teamnamens.', 'error');
+    team.name = original;
+    showSnackbar(t('feedback.renameFailed'), 'error');
   }
 };
 
@@ -412,10 +464,6 @@ onMounted(fetchTeams);
   font-size: 3rem;
   font-weight: inherit;
   margin: 0;
-}
-
-.team-name {
-  cursor: pointer;
 }
 
 .team-name__edit-icon {

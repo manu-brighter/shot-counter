@@ -5,10 +5,17 @@ const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
 
+const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]
+));
+
 // Standalone splash shown instantly while the bundled server boots (portable
-// builds self-extract ~100 MB and take up to ~20s) — matches Vuetify's dark theme.
-const LOADING_HTML = `<!doctype html>
-<html lang="de">
+// builds self-extract ~100 MB and take up to ~20s) — matches Vuetify's dark
+// theme. English only: it renders before the app, and therefore before the
+// user's language choice, exists.
+function renderSplash({ heading, message, spinner }) {
+  return `<!doctype html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <style>
@@ -45,6 +52,8 @@ const LOADING_HTML = `<!doctype html>
     font-size: 14px;
     color: rgba(255, 255, 255, 0.5);
     margin-top: -18px;
+  }
+  .subtitle--pulse {
     animation: pulse 1.6s ease-in-out infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -53,12 +62,17 @@ const LOADING_HTML = `<!doctype html>
 </head>
 <body>
   <div class="wrap">
-    <div class="spinner"></div>
-    <div class="title">Shöttli-Counter</div>
-    <div class="subtitle">wird gestartet …</div>
+    ${spinner ? '<div class="spinner"></div>' : ''}
+    <div class="title">${escapeHtml(heading)}</div>
+    <div class="subtitle${spinner ? ' subtitle--pulse' : ''}">${escapeHtml(message)}</div>
   </div>
 </body>
 </html>`;
+}
+
+function loadHtml(html) {
+  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+}
 
 function startServer() {
   process.env.DB_PATH = path.join(app.getPath('userData'), 'shot_counter.db');
@@ -75,7 +89,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: 'Shöttli-Counter',
+    title: 'Shot-Counter',
     backgroundColor: '#121212',
     webPreferences: {
       nodeIntegration: false,
@@ -85,7 +99,11 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
 
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(LOADING_HTML)}`);
+  loadHtml(renderSplash({
+    heading: 'Shot-Counter',
+    message: 'Starting …',
+    spinner: true,
+  }));
 }
 
 function loadApp(port) {
@@ -94,13 +112,13 @@ function loadApp(port) {
 
 function showStartupError(err) {
   const detail = err && err.code === 'EADDRINUSE'
-    ? `Port ${process.env.PORT ?? 5000} ist bereits belegt — läuft die App schon?`
-    : (err && err.message) || 'Unbekannter Fehler';
-  const html = LOADING_HTML
-    .replace('<div class="spinner"></div>', '<div class="title">⚠ Start fehlgeschlagen</div>')
-    .replace('<div class="title">Shöttli-Counter</div>', '')
-    .replace('wird gestartet …', detail);
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    ? `Port ${process.env.PORT ?? 5000} is already in use — is the app already running?`
+    : (err && err.message) || 'Unknown error';
+  loadHtml(renderSplash({
+    heading: '⚠ Startup failed',
+    message: detail,
+    spinner: false,
+  }));
 }
 
 // One running instance owns the fixed server port — a second launch (e.g. an
