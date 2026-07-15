@@ -36,10 +36,31 @@
       />
     </div>
 
-    <ShotOdometer
-      :value="team.counter"
-      class="team-row__count"
-    />
+    <button
+      v-if="!editingCount"
+      type="button"
+      class="team-row__count-btn"
+      :title="t('actions.setCount')"
+      :aria-label="`${t('actions.setCount')} (${team.counter})`"
+      @click="startCountEdit"
+    >
+      <ShotOdometer
+        :value="team.counter"
+        class="team-row__count"
+      />
+    </button>
+    <input
+      v-else
+      ref="countInput"
+      v-model="countValue"
+      class="team-row__count-input"
+      type="text"
+      inputmode="numeric"
+      :aria-label="t('actions.setCount')"
+      @blur="saveCount"
+      @keyup.enter="saveCount"
+      @keydown.esc="cancelCountEdit"
+    >
 
     <div class="team-row__actions">
       <v-btn
@@ -61,9 +82,7 @@
           :aria-label="t('actions.addShot')"
           @click="onPlus"
         >
-          <v-icon size="28">
-            $plus
-          </v-icon>
+          <v-icon>$plus</v-icon>
         </v-btn>
         <span
           v-if="burstId"
@@ -121,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ShotOdometer from '@/components/ShotOdometer.vue';
@@ -131,7 +150,7 @@ const props = defineProps({
   rank: { type: Number, required: true },
 });
 
-const emit = defineEmits(['increment', 'decrement', 'rename', 'delete']);
+const emit = defineEmits(['increment', 'decrement', 'rename', 'delete', 'set-count', 'count-invalid']);
 
 const { t } = useI18n();
 
@@ -168,6 +187,38 @@ const saveName = () => {
   emit('rename', name);
 };
 
+// Click the number, type the new total — for "add 20 shots at once" moments.
+const editingCount = ref(false);
+const countValue = ref('');
+const countInput = ref(null);
+
+const startCountEdit = async () => {
+  countValue.value = String(props.team.counter);
+  editingCount.value = true;
+  await nextTick();
+  countInput.value?.select();
+};
+
+const cancelCountEdit = () => {
+  editingCount.value = false;
+};
+
+const saveCount = () => {
+  // Leave edit mode synchronously: @keyup.enter also triggers @blur, and
+  // without this both would fire their own event.
+  if (!editingCount.value) return;
+  editingCount.value = false;
+
+  const raw = countValue.value.trim();
+  if (!/^\d{1,6}$/.test(raw)) {
+    emit('count-invalid');
+    return;
+  }
+  const value = Number(raw);
+  if (value === props.team.counter) return;
+  emit('set-count', value);
+};
+
 // Amber splash from the + button; re-keyed per tap so it restarts cleanly.
 const burstId = ref(0);
 let burstTimer = null;
@@ -184,6 +235,9 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
 </script>
 
 <style scoped>
+/* All metrics come from --sc-* vars so the desktop density slider (see
+   useBoardDensity.js) can scale the rows; fallbacks are the comfortable
+   default size. */
 .team-row {
   position: relative;
   display: grid;
@@ -191,10 +245,10 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 16px;
-  padding: 14px 18px;
+  padding: var(--sc-row-pad-y, 14px) var(--sc-row-pad-x, 18px);
   background: var(--sc-surface);
   border: 1px solid var(--sc-line);
-  border-radius: 18px;
+  border-radius: var(--sc-row-radius, 18px);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -203,14 +257,14 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   grid-area: rank;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--sc-rank, 44px);
+  height: var(--sc-rank, 44px);
   border-radius: 50%;
   border: 1px solid var(--sc-line);
   background: var(--sc-surface-2);
   color: var(--sc-faded);
   font-family: var(--sc-display);
-  font-size: 1.15rem;
+  font-size: var(--sc-rank-font, 1.15rem);
   line-height: 1;
 }
 
@@ -244,8 +298,8 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   content: '';
   position: absolute;
   left: -1px;
-  top: 12px;
-  bottom: 12px;
+  top: 20%;
+  bottom: 20%;
   width: 3px;
   border-radius: 3px;
   background: linear-gradient(180deg, #ffe08a, var(--sc-gold) 45%, #c98f00);
@@ -274,8 +328,8 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   align-items: center;
   gap: 8px;
   max-width: 100%;
-  padding: 4px 6px;
-  margin: -4px -6px;
+  padding: 3px 6px;
+  margin: -3px -6px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -289,9 +343,10 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 1.08rem;
+  font-size: var(--sc-name-font, 1.08rem);
   font-weight: 600;
   letter-spacing: 0.01em;
+  line-height: 1.3;
 }
 
 .team-row__edit-hint {
@@ -313,11 +368,31 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   }
 }
 
-/* Counter */
-.team-row__count {
+/* Counter — a button, because clicking it opens direct input */
+.team-row__count-btn {
   grid-area: count;
+  justify-self: start;
+  display: flex;
+  align-items: center;
   margin-right: 6px;
-  font-size: 2.1rem;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.team-row__count-btn:hover,
+.team-row__count-btn:focus-visible {
+  background: var(--sc-amber-soft);
+}
+
+/* Integer px sizes on purpose: the odometer translates its digit strip in em,
+   and a fractional em leaks a sliver of the neighbouring digit. */
+.team-row__count {
+  font-size: var(--sc-count-font, 34px);
   color: var(--sc-cream);
 }
 
@@ -326,28 +401,60 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   text-shadow: 0 0 18px rgba(255, 201, 60, 0.35);
 }
 
+.team-row__count-input {
+  grid-area: count;
+  justify-self: start;
+  width: 6ch;
+  margin-right: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--sc-amber);
+  border-radius: 10px;
+  background: var(--sc-surface-2);
+  color: var(--sc-cream);
+  font-family: var(--sc-display);
+  font-size: calc(var(--sc-count-font, 34px) * 0.72);
+  text-align: right;
+  outline: none;
+}
+
 /* Actions */
 .team-row__actions {
   grid-area: actions;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sc-actions-gap, 10px);
 }
 
-.team-row__minus {
-  width: 42px;
-  height: 42px;
+/* The extra .team-row__actions ancestor outscores Vuetify's own
+   .v-btn--icon.v-btn--density-default sizing, which loads later. */
+.team-row__actions .team-row__minus {
+  width: var(--sc-minus, 42px);
+  height: var(--sc-minus, 42px);
+}
+
+.team-row__minus :deep(.v-icon) {
+  font-size: calc(var(--sc-minus, 42px) * 0.5);
 }
 
 .team-row__plus-wrap {
   position: relative;
+  display: flex;
 }
 
-.team-row__plus {
-  width: 54px;
-  height: 54px;
+.team-row__actions .team-row__plus {
+  width: var(--sc-plus, 54px);
+  height: var(--sc-plus, 54px);
   box-shadow: 0 4px 18px rgba(255, 182, 39, 0.28);
   transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+
+.team-row__plus :deep(.v-icon) {
+  font-size: calc(var(--sc-plus, 54px) * 0.52);
+}
+
+.team-row__actions .team-row__more {
+  width: var(--sc-more, 40px);
+  height: var(--sc-more, 40px);
 }
 
 .team-row__plus:active {
@@ -414,7 +521,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   }
 
   .team-row__count {
-    font-size: 1.9rem;
+    font-size: 30px;
   }
 
   .team-row__actions {

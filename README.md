@@ -59,7 +59,7 @@ Concurrent button presses from multiple devices don't race. The backend uses `UP
 `better-sqlite3` runs in-process against a single file — no DB server to install or keep alive. Its synchronous API means no connection pool and no async gap between read and write. The desktop build stores the file in `%APPDATA%\Shot-Counter\`.
 
 **A scoreboard, not a data table**
-The UI is built like a late-night bar scoreboard: warm near-black, amber accents, condensed display type (Anton) for the digits, and gold/silver/bronze medals for the top three — which only appear once a team has actually scored. Fonts are self-hosted (`@fontsource`), so the design works fully offline.
+The UI is built like a late-night bar scoreboard: warm near-black with a subtly animated backdrop, amber accents, condensed display type (Anton) for the digits, and gold/silver/bronze medals for the top three — which only appear once a team has actually scored. A card-size slider compacts the board down to ~30 teams on one screen, big displays (beamer!) scale it up, fullscreen is one click away, and clicking any number lets you type a count directly. Fonts are self-hosted (`@fontsource`), so the design works fully offline.
 
 **Zero webfont overhead for icons**
 All icons are inlined as SVG paths from `@mdi/js` — no 350 KB `@mdi/font` webfont in the bundle.
@@ -204,6 +204,7 @@ The workflow creates a **draft** release — review the attached artifacts on th
 | `DELETE` | `/api/teams/:id` | — | Delete a team |
 | `POST` | `/api/teams/:id/increment` | — | Atomic counter +1 |
 | `POST` | `/api/teams/:id/decrement` | — | Atomic counter −1 (floor 0) |
+| `PUT` | `/api/teams/:id/counter` | `{ counter }` | Set a counter to an absolute value |
 | `POST` | `/api/teams/reset` | — | New round — reset every counter to 0 |
 
 All responses are JSON (the SSE stream sends JSON `teams` events). Errors return `{ error }` with appropriate HTTP status codes (`400` validation, `404` not found, `500` server error).

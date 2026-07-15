@@ -33,6 +33,13 @@ export default {
     teamOptions: 'Optionen für {name}',
     join: 'Mitmachen',
     newRound: 'Neue Runde',
+    fullscreen: 'Vollbild',
+    exitFullscreen: 'Vollbild beenden',
+    setCount: 'Anzahl direkt setzen',
+  },
+
+  board: {
+    density: 'Kartengrösse',
   },
 
   addDialog: {
@@ -74,5 +81,11 @@ export default {
     counterFailed: 'Fehler beim Aktualisieren des Zählers.',
     renameFailed: 'Fehler beim Speichern des Teamnamens.',
     resetFailed: 'Fehler beim Zurücksetzen der Zähler.',
+    countInvalid: 'Bitte eine gültige Zahl eingeben.',
+  },
+
+  footer: {
+    credit: 'Entwickelt von',
+    github: 'Gratis auf GitHub',
   },
 };

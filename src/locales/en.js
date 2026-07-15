@@ -34,6 +34,13 @@ export default {
     teamOptions: 'Options for {name}',
     join: 'Join',
     newRound: 'New round',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    setCount: 'Set count directly',
+  },
+
+  board: {
+    density: 'Card size',
   },
 
   addDialog: {
@@ -75,5 +82,11 @@ export default {
     counterFailed: 'Failed to update the counter.',
     renameFailed: 'Failed to save the team name.',
     resetFailed: 'Failed to reset the counters.',
+    countInvalid: 'Please enter a valid number.',
+  },
+
+  footer: {
+    credit: 'Made by',
+    github: 'Free on GitHub',
   },
 };

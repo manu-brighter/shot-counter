@@ -76,6 +76,25 @@ export function useTeams() {
     }
   };
 
+  // Absolute set, same optimistic pattern as adjustCounter.
+  const setCounter = async (team, value) => {
+    const entry = teams.value.find((item) => item.id === team.id);
+    if (!entry) return;
+    const before = entry.counter;
+    entry.counter = value;
+    try {
+      const updated = await request(`/api/teams/${team.id}/counter`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ counter: value }),
+      });
+      entry.counter = updated.counter;
+    } catch (err) {
+      entry.counter = before;
+      throw err;
+    }
+  };
+
   let eventSource = null;
   let fallbackTimer = null;
 
@@ -129,5 +148,6 @@ export function useTeams() {
     deleteTeam,
     resetCounters,
     adjustCounter,
+    setCounter,
   };
 }

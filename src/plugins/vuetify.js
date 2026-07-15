@@ -18,6 +18,10 @@ import {
   mdiRestart,
   mdiDotsVertical,
   mdiWifiOff,
+  mdiFullscreen,
+  mdiFullscreenExit,
+  mdiViewHeadline,
+  mdiViewAgendaOutline,
 } from '@mdi/js'
 
 // Composables
@@ -87,6 +91,10 @@ export default createVuetify({
       restart: mdiRestart,
       dotsVertical: mdiDotsVertical,
       wifiOff: mdiWifiOff,
+      fullscreen: mdiFullscreen,
+      fullscreenExit: mdiFullscreenExit,
+      viewCompact: mdiViewHeadline,
+      viewComfy: mdiViewAgendaOutline,
     },
     sets: { mdi },
   },

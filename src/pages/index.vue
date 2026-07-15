@@ -4,6 +4,15 @@
       class="ambient"
       aria-hidden="true"
     />
+    <div
+      class="bubbles"
+      aria-hidden="true"
+    >
+      <span
+        v-for="n in 14"
+        :key="n"
+      />
+    </div>
 
     <header class="topbar">
       <!-- Brand name — deliberately not translated. -->
@@ -53,6 +62,17 @@
 
           <v-btn
             variant="tonal"
+            icon
+            class="topbar__icon-btn"
+            :aria-label="isFullscreen ? t('actions.exitFullscreen') : t('actions.fullscreen')"
+            :title="isFullscreen ? t('actions.exitFullscreen') : t('actions.fullscreen')"
+            @click="toggleFullscreen"
+          >
+            <v-icon>{{ isFullscreen ? '$fullscreenExit' : '$fullscreen' }}</v-icon>
+          </v-btn>
+
+          <v-btn
+            variant="tonal"
             class="join-btn"
             :aria-label="t('actions.join')"
             :title="t('actions.join')"
@@ -91,7 +111,44 @@
       </div>
     </header>
 
-    <main class="board">
+    <main
+      class="board"
+      :style="boardStyle"
+    >
+      <div
+        v-if="!smallScreen && rankedTeams.length"
+        class="board__toolbar"
+      >
+        <v-slider
+          v-model="density"
+          class="density-slider"
+          :aria-label="t('board.density')"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          hide-details
+          density="compact"
+          color="primary"
+        >
+          <template #prepend>
+            <v-icon
+              size="small"
+              class="density-slider__icon"
+            >
+              $viewCompact
+            </v-icon>
+          </template>
+          <template #append>
+            <v-icon
+              size="small"
+              class="density-slider__icon"
+            >
+              $viewComfy
+            </v-icon>
+          </template>
+        </v-slider>
+      </div>
+
       <div
         v-if="loading"
         class="board__loading"
@@ -120,6 +177,8 @@
             @increment="onAdjust(team, 'increment')"
             @decrement="onAdjust(team, 'decrement')"
             @rename="(name) => onRename(team, name)"
+            @set-count="(value) => onSetCount(team, value)"
+            @count-invalid="showSnackbar(t('feedback.countInvalid'), 'error')"
             @delete="openConfirmDeleteDialog(team)"
           />
         </li>
@@ -202,6 +261,25 @@
         </v-btn>
       </div>
     </main>
+
+    <footer class="footer">
+      <span>
+        {{ t('footer.credit') }}
+        <a
+          class="footer__link"
+          href="https://manuelheller.dev"
+          target="_blank"
+          rel="noopener"
+        >Manuel Heller</a>
+      </span>
+      <span class="footer__sep">·</span>
+      <a
+        class="footer__link"
+        href="https://github.com/manu-brighter/shot-counter"
+        target="_blank"
+        rel="noopener"
+      >{{ t('footer.github') }}</a>
+    </footer>
 
     <v-dialog
       v-model="addTeamDialog"
@@ -330,6 +408,8 @@ import confetti from 'canvas-confetti';
 
 import { SUPPORTED_LOCALES } from '@/plugins/i18n';
 import { useTeams } from '@/composables/useTeams';
+import { useMediaQuery } from '@/composables/useMediaQuery';
+import { useBoardDensity } from '@/composables/useBoardDensity';
 import TeamRow from '@/components/TeamRow.vue';
 import ShotOdometer from '@/components/ShotOdometer.vue';
 import JoinDialog from '@/components/JoinDialog.vue';
@@ -348,6 +428,7 @@ const {
   deleteTeam,
   resetCounters,
   adjustCounter,
+  setCounter,
 } = useTeams();
 
 const addTeamDialog = ref(false);
@@ -371,18 +452,31 @@ function showSnackbar(message, color = 'success') {
 const pendingDeleteTeam = computed(() => teams.value.find((item) => item.id === pendingDeleteId.value));
 
 // The join button collapses to an icon on phones.
-const smallScreen = ref(false);
-const screenQuery = window.matchMedia('(max-width: 640px)');
-const onScreenChange = () => (smallScreen.value = screenQuery.matches);
+const smallScreen = useMediaQuery('(max-width: 640px)');
+
+// Desktop card-size slider — compact fits ~30 teams on a 1080p screen.
+const { density, boardStyle } = useBoardDensity(smallScreen);
+
+// Fullscreen via the HTML API, so it works in the desktop app and in every
+// browser on the LAN alike. Electron additionally maps F11 (main.cjs).
+const isFullscreen = ref(false);
+const onFullscreenChange = () => (isFullscreen.value = Boolean(document.fullscreenElement));
 
 onMounted(() => {
-  onScreenChange();
-  screenQuery.addEventListener('change', onScreenChange);
+  document.addEventListener('fullscreenchange', onFullscreenChange);
 });
 
 onBeforeUnmount(() => {
-  screenQuery.removeEventListener('change', onScreenChange);
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
 });
+
+const toggleFullscreen = () => {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+};
 
 const addNewTeam = async () => {
   if (!newTeam.value.name.trim()) {
@@ -409,6 +503,15 @@ const onAdjust = async (team, direction) => {
     await adjustCounter(team, direction);
   } catch (err) {
     console.error(`Error running ${direction}:`, err);
+    showSnackbar(t('feedback.counterFailed'), 'error');
+  }
+};
+
+const onSetCount = async (team, value) => {
+  try {
+    await setCounter(team, value);
+  } catch (err) {
+    console.error('Error setting counter:', err);
     showSnackbar(t('feedback.counterFailed'), 'error');
   }
 };
@@ -510,25 +613,141 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .shell {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
   max-width: 880px;
   margin: 0 auto;
-  padding: clamp(18px, 4vw, 44px) clamp(14px, 4vw, 24px) 40px;
+  padding: clamp(18px, 4vw, 44px) clamp(14px, 4vw, 24px) 28px;
 }
+
+/* --- Ambient backdrop: breathing bar light, rising bubbles, fine grain.
+       All of it sits behind the content and stays quiet. --- */
 
 .ambient {
   position: fixed;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(1000px 480px at 50% -10%, rgba(255, 182, 39, 0.09), transparent 65%),
-    radial-gradient(800px 500px at 90% 110%, rgba(208, 138, 78, 0.06), transparent 60%);
+}
+
+.ambient::before,
+.ambient::after {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  will-change: transform, opacity;
+}
+
+.ambient::before {
+  background: radial-gradient(42% 34% at 50% 12%, rgba(255, 182, 39, 0.13), transparent 70%);
+  animation: glow-drift-a 38s ease-in-out infinite alternate;
+}
+
+.ambient::after {
+  background: radial-gradient(36% 32% at 84% 92%, rgba(208, 138, 78, 0.09), transparent 70%);
+  animation: glow-drift-b 52s ease-in-out infinite alternate;
+}
+
+@keyframes glow-drift-a {
+  from {
+    transform: translate3d(-3%, -1%, 0) scale(1);
+    opacity: 0.75;
+  }
+
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.18);
+    opacity: 1;
+  }
+}
+
+@keyframes glow-drift-b {
+  from {
+    transform: translate3d(2%, 2%, 0) scale(1.12);
+    opacity: 1;
+  }
+
+  to {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+    opacity: 0.7;
+  }
+}
+
+/* Bubbles — like carbonation in a glass, barely there */
+.bubbles {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bubbles span {
+  position: absolute;
+  bottom: -3vh;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 214, 130, 0.5), rgba(255, 182, 39, 0.15) 65%, transparent);
+  animation: bubble-rise linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: var(--bubble-o, 0.12);
+  }
+
+  85% {
+    opacity: var(--bubble-o, 0.12);
+  }
+
+  100% {
+    transform: translate3d(var(--bubble-sway, 24px), -108vh, 0);
+    opacity: 0;
+  }
+}
+
+// left %, size, duration, delay, horizontal sway, peak opacity
+$bubbles: (
+  (6%, 5px, 26s, -2s, 26px, 0.13),
+  (13%, 3px, 34s, -12s, -18px, 0.09),
+  (21%, 6px, 22s, -7s, 22px, 0.14),
+  (28%, 4px, 30s, -18s, -26px, 0.1),
+  (36%, 3px, 38s, -5s, 16px, 0.08),
+  (44%, 5px, 24s, -15s, -20px, 0.13),
+  (52%, 4px, 32s, -9s, 28px, 0.1),
+  (60%, 6px, 21s, -3s, -16px, 0.14),
+  (67%, 3px, 36s, -20s, 20px, 0.08),
+  (74%, 5px, 27s, -11s, -24px, 0.12),
+  (81%, 4px, 33s, -6s, 18px, 0.1),
+  (88%, 6px, 23s, -16s, -22px, 0.14),
+  (94%, 3px, 39s, -1s, 14px, 0.08),
+  (47%, 3px, 41s, -23s, -14px, 0.07),
+);
+
+@for $i from 1 through length($bubbles) {
+  $b: nth($bubbles, $i);
+
+  .bubbles span:nth-child(#{$i}) {
+    left: nth($b, 1);
+    width: nth($b, 2);
+    height: nth($b, 2);
+    animation-duration: nth($b, 3);
+    animation-delay: nth($b, 4);
+    --bubble-sway: #{nth($b, 5)};
+    --bubble-o: #{nth($b, 6)};
+  }
 }
 
 .topbar,
-.board {
+.board,
+.footer {
   position: relative;
 }
 
@@ -569,8 +788,9 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
   gap: 8px;
 }
 
+/* Integer px — fractional odometer font sizes leak digit slivers */
 .stat__value {
-  font-size: 1.5rem;
+  font-size: 24px;
   color: var(--sc-amber);
 }
 
@@ -624,6 +844,21 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
 }
 
 /* Board */
+.board__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.density-slider {
+  max-width: 210px;
+}
+
+.density-slider__icon {
+  color: var(--sc-faded);
+  opacity: 0.7;
+}
+
 .board__loading {
   display: flex;
   justify-content: center;
@@ -634,7 +869,7 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--sc-list-gap, 12px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -652,9 +887,10 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
   }
 }
 
-/* FLIP reordering when a team overtakes another */
+/* FLIP reordering when a team overtakes another — slow and glassy on purpose,
+   the takeover moment is meant to be watched across the room */
 .board-move {
-  transition: transform 0.5s var(--sc-ease-snap);
+  transition: transform 0.85s var(--sc-ease-smooth);
 }
 
 .board-leave-active {
@@ -709,6 +945,76 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
   color: var(--sc-faded);
 }
 
+/* Footer credit */
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 36px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--sc-faded);
+  opacity: 0.75;
+}
+
+.footer__link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.footer__link:hover,
+.footer__link:focus-visible {
+  color: var(--sc-amber);
+  border-color: var(--sc-amber);
+}
+
+.footer__sep {
+  opacity: 0.6;
+}
+
+/* Big screens (beamer at the party): let the board fill the projection */
+@media (min-width: 1600px) {
+  .shell {
+    max-width: 1150px;
+  }
+
+  .wordmark {
+    font-size: 2.8rem;
+  }
+
+  .stat__value {
+    font-size: 27px;
+  }
+}
+
+@media (min-width: 2400px) {
+  .shell {
+    max-width: 1500px;
+  }
+
+  .wordmark {
+    font-size: 3.4rem;
+  }
+
+  .stat__value {
+    font-size: 32px;
+  }
+
+  .topbar__icon-btn,
+  .join-btn,
+  .locale-toggle {
+    height: 46px;
+  }
+
+  .footer {
+    font-size: 0.9rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .board__item {
     animation: none;
@@ -717,6 +1023,15 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
   .board-move,
   .board-leave-active {
     transition: none;
+  }
+
+  .ambient::before,
+  .ambient::after {
+    animation: none;
+  }
+
+  .bubbles {
+    display: none;
   }
 }
 </style>
