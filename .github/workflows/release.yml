@@ -10,20 +10,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # electron-builder needs this to create the release + upload assets
+  contents: write # the publish job needs this to create the release
 
-# max-parallel below only serialises the matrix within one run; this stops two
-# runs (e.g. a re-pushed tag) from publishing into the same release at once.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  # Build only — electron-builder must NOT publish here. It uploads artifacts
+  # in parallel, and each upload independently asks "does the release exist
+  # yet?"; concurrent uploads all get "no" and each creates its own release,
+  # scattering the assets across duplicate drafts. Building to disk and
+  # releasing once, from a single job below, avoids that entirely.
+  build:
     strategy:
-      # Run one runner at a time so both jobs publish into the same release
-      # instead of racing to create it.
-      max-parallel: 1
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -62,7 +63,46 @@ jobs:
 
       - run: npm run build
 
-      - name: Build & publish
-        run: npx electron-builder ${{ matrix.platform }} --publish always
+      - name: Build desktop artifacts
+        run: npx electron-builder ${{ matrix.platform }} --publish never
+
+      # Only the files the README links to. The .blockmap and latest*.yml that
+      # electron-builder emits are for electron-updater, which this app does
+      # not use.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            dist-electron/*.exe
+            dist-electron/*.AppImage
+
+  # One job, one release, all assets.
+  publish:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh artifacts
+
+      # Draft: the artifacts are reviewed before anyone can download them.
+      # Deliberately not --prerelease even for beta versions — GitHub excludes
+      # pre-releases from /releases/latest/, which is what the README links use.
+      - name: Create draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --draft \
+            --generate-notes \
+            artifacts/*
