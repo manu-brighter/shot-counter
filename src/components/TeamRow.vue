@@ -97,45 +97,46 @@
           />
         </span>
       </div>
-      <v-menu content-class="sc-menu">
-        <template #activator="{ props: menuProps }">
-          <v-btn
-            v-bind="menuProps"
-            class="team-row__more"
-            variant="text"
-            icon
-            size="small"
-            :aria-label="t('actions.teamOptions', { name: team.name })"
-          >
-            <v-icon>$dotsVertical</v-icon>
-          </v-btn>
-        </template>
-        <v-list
-          density="compact"
-          bg-color="transparent"
-        >
-          <v-list-item @click="startEditing">
-            <template #prepend>
-              <v-icon size="small">
-                $pencil
-              </v-icon>
-            </template>
-            <v-list-item-title>{{ t('actions.rename') }}</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            class="text-error"
-            @click="emit('delete')"
-          >
-            <template #prepend>
-              <v-icon size="small">
-                $delete
-              </v-icon>
-            </template>
-            <v-list-item-title>{{ t('actions.delete') }}</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
     </div>
+
+    <v-menu content-class="sc-menu">
+      <template #activator="{ props: menuProps }">
+        <v-btn
+          v-bind="menuProps"
+          class="team-row__more"
+          variant="text"
+          icon
+          size="small"
+          :aria-label="t('actions.teamOptions', { name: team.name })"
+        >
+          <v-icon>$dotsVertical</v-icon>
+        </v-btn>
+      </template>
+      <v-list
+        density="compact"
+        bg-color="transparent"
+      >
+        <v-list-item @click="startEditing">
+          <template #prepend>
+            <v-icon size="small">
+              $pencil
+            </v-icon>
+          </template>
+          <v-list-item-title>{{ t('actions.rename') }}</v-list-item-title>
+        </v-list-item>
+        <v-list-item
+          class="text-error"
+          @click="emit('delete')"
+        >
+          <template #prepend>
+            <v-icon size="small">
+              $delete
+            </v-icon>
+          </template>
+          <v-list-item-title>{{ t('actions.delete') }}</v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </v-menu>
   </article>
 </template>
 
@@ -241,15 +242,33 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
 .team-row {
   position: relative;
   display: grid;
-  grid-template-areas: 'rank name count actions';
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: 'rank name count actions more';
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: var(--sc-row-pad-y, 14px) var(--sc-row-pad-x, 18px);
   background: var(--sc-surface);
   border: 1px solid var(--sc-line);
   border-radius: var(--sc-row-radius, 18px);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* The gold wash lives on a fading overlay instead of the row itself: class
+   swaps mid-FLIP would otherwise snap colors and repaint while rows glide. */
+.team-row::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid rgba(255, 201, 60, 0.32);
+  background: linear-gradient(90deg, rgba(255, 182, 39, 0.09), rgba(255, 182, 39, 0.02) 45%, transparent 75%);
+  box-shadow: 0 0 34px rgba(255, 182, 39, 0.10);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.team-row--gold::after {
+  opacity: 1;
 }
 
 /* Rank badge */
@@ -287,13 +306,8 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   color: #2a1505;
 }
 
-/* The pour — liquid gold edge on the leading row */
-.team-row--gold {
-  border-color: rgba(255, 201, 60, 0.32);
-  background: linear-gradient(90deg, rgba(255, 182, 39, 0.10), rgba(255, 182, 39, 0.02) 45%, var(--sc-surface) 75%);
-  box-shadow: 0 0 34px rgba(255, 182, 39, 0.10);
-}
-
+/* The pour — liquid gold edge on the leading row. Pulses opacity only, so it
+   stays compositor-friendly while rows are animating past each other. */
 .team-row--gold::before {
   content: '';
   position: absolute;
@@ -303,17 +317,16 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   width: 3px;
   border-radius: 3px;
   background: linear-gradient(180deg, #ffe08a, var(--sc-gold) 45%, #c98f00);
+  box-shadow: 0 0 16px rgba(255, 201, 60, 0.45);
   animation: pour 2.8s ease-in-out infinite;
 }
 
 @keyframes pour {
   0%, 100% {
-    filter: brightness(0.9);
-    box-shadow: 0 0 10px rgba(255, 201, 60, 0.25);
+    opacity: 0.65;
   }
   50% {
-    filter: brightness(1.3);
-    box-shadow: 0 0 22px rgba(255, 201, 60, 0.55);
+    opacity: 1;
   }
 }
 
@@ -394,6 +407,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
 .team-row__count {
   font-size: var(--sc-count-font, 34px);
   color: var(--sc-cream);
+  transition: color 0.5s ease;
 }
 
 .team-row--gold .team-row__count {
@@ -462,6 +476,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
 }
 
 .team-row__more {
+  grid-area: more;
   color: var(--sc-faded);
 }
 
@@ -503,29 +518,68 @@ onBeforeUnmount(() => clearTimeout(burstTimer));
   }
 }
 
-/* Phones: name on top, counter + actions below, rank spans both lines */
+/* Phones: rank + name + menu on the first line, then the counter as the hero
+   with big thumb-sized buttons on the second. Phones are the tapping devices. */
 @media (max-width: 640px) {
   .team-row {
     grid-template-areas:
-      'rank name name'
-      'rank count actions';
+      'rank name more'
+      'count count actions';
     grid-template-columns: auto minmax(0, 1fr) auto;
-    row-gap: 10px;
-    padding: 12px 14px;
+    row-gap: 12px;
+    column-gap: 10px;
+    padding: 12px 14px 14px;
+    border-radius: 16px;
   }
 
   .team-row__rank {
-    width: 38px;
-    height: 38px;
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .team-row__name-text {
     font-size: 1rem;
   }
 
+  .team-row__count-btn {
+    margin-right: 0;
+    padding-left: 4px;
+  }
+
   .team-row__count {
-    font-size: 30px;
+    font-size: 40px;
+  }
+
+  .team-row__count-input {
+    font-size: 28px;
   }
 
   .team-row__actions {
     justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .team-row__actions .team-row__minus {
+    width: 42px;
+    height: 42px;
+  }
+
+  .team-row__actions .team-row__minus :deep(.v-icon) {
+    font-size: 21px;
+  }
+
+  .team-row__actions .team-row__plus {
+    width: 56px;
+    height: 56px;
+  }
+
+  .team-row__actions .team-row__plus :deep(.v-icon) {
+    font-size: 29px;
+  }
+
+  .team-row__more {
+    justify-self: end;
   }
 }
 </style>

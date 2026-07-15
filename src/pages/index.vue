@@ -643,12 +643,12 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
 }
 
 .ambient::before {
-  background: radial-gradient(42% 34% at 50% 12%, rgba(255, 182, 39, 0.13), transparent 70%);
+  background: radial-gradient(42% 34% at 50% 12%, rgba(255, 182, 39, 0.20), transparent 70%);
   animation: glow-drift-a 38s ease-in-out infinite alternate;
 }
 
 .ambient::after {
-  background: radial-gradient(36% 32% at 84% 92%, rgba(208, 138, 78, 0.09), transparent 70%);
+  background: radial-gradient(36% 32% at 84% 92%, rgba(208, 138, 78, 0.14), transparent 70%);
   animation: glow-drift-b 52s ease-in-out infinite alternate;
 }
 
@@ -688,7 +688,7 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
   position: absolute;
   bottom: -3vh;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 214, 130, 0.5), rgba(255, 182, 39, 0.15) 65%, transparent);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 214, 130, 0.65), rgba(255, 182, 39, 0.22) 65%, transparent);
   animation: bubble-rise linear infinite;
   will-change: transform, opacity;
 }
@@ -715,20 +715,20 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
 
 // left %, size, duration, delay, horizontal sway, peak opacity
 $bubbles: (
-  (6%, 5px, 26s, -2s, 26px, 0.13),
-  (13%, 3px, 34s, -12s, -18px, 0.09),
-  (21%, 6px, 22s, -7s, 22px, 0.14),
-  (28%, 4px, 30s, -18s, -26px, 0.1),
-  (36%, 3px, 38s, -5s, 16px, 0.08),
-  (44%, 5px, 24s, -15s, -20px, 0.13),
-  (52%, 4px, 32s, -9s, 28px, 0.1),
-  (60%, 6px, 21s, -3s, -16px, 0.14),
-  (67%, 3px, 36s, -20s, 20px, 0.08),
-  (74%, 5px, 27s, -11s, -24px, 0.12),
-  (81%, 4px, 33s, -6s, 18px, 0.1),
-  (88%, 6px, 23s, -16s, -22px, 0.14),
-  (94%, 3px, 39s, -1s, 14px, 0.08),
-  (47%, 3px, 41s, -23s, -14px, 0.07),
+  (6%, 6px, 26s, -2s, 26px, 0.2),
+  (13%, 4px, 34s, -12s, -18px, 0.14),
+  (21%, 7px, 22s, -7s, 22px, 0.22),
+  (28%, 5px, 30s, -18s, -26px, 0.16),
+  (36%, 4px, 38s, -5s, 16px, 0.12),
+  (44%, 6px, 24s, -15s, -20px, 0.2),
+  (52%, 5px, 32s, -9s, 28px, 0.16),
+  (60%, 7px, 21s, -3s, -16px, 0.22),
+  (67%, 4px, 36s, -20s, 20px, 0.12),
+  (74%, 6px, 27s, -11s, -24px, 0.18),
+  (81%, 5px, 33s, -6s, 18px, 0.16),
+  (88%, 7px, 23s, -16s, -22px, 0.22),
+  (94%, 4px, 39s, -1s, 14px, 0.12),
+  (47%, 4px, 41s, -23s, -14px, 0.11),
 );
 
 @for $i from 1 through length($bubbles) {
@@ -890,7 +890,8 @@ $bubbles: (
 /* FLIP reordering when a team overtakes another — slow and glassy on purpose,
    the takeover moment is meant to be watched across the room */
 .board-move {
-  transition: transform 0.85s var(--sc-ease-smooth);
+  transition: transform 1.1s cubic-bezier(0.35, 0, 0.15, 1);
+  will-change: transform;
 }
 
 .board-leave-active {
@@ -974,6 +975,55 @@ $bubbles: (
 
 .footer__sep {
   opacity: 0.6;
+}
+
+/* Phones: two tight header lines — brand, then stat + controls — and a
+   full-width add button */
+@media (max-width: 640px) {
+  .topbar {
+    row-gap: 14px;
+    margin-bottom: 18px;
+    justify-content: space-between;
+  }
+
+  /* Dissolve the side wrapper: brand + stat share the first line, the
+     controls form a full-width second line with the language switch right. */
+  .topbar__side {
+    display: contents;
+  }
+
+  .topbar__actions {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .topbar__actions .locale-toggle {
+    margin-left: auto;
+  }
+
+  .topbar__icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .join-btn {
+    min-width: 38px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+  }
+
+  .locale-toggle {
+    height: 38px;
+  }
+
+  .board__footer {
+    margin-top: 18px;
+  }
+
+  .cta-btn {
+    width: 100%;
+  }
 }
 
 /* Big screens (beamer at the party): let the board fill the projection */
