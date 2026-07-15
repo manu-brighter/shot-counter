@@ -15,12 +15,9 @@ export default {
     de: 'Deutsch',
   },
 
-  table: {
-    rank: 'Platz',
-    teamName: 'Teamname',
-    shots: 'Treffer',
-    actions: 'Aktionen',
-    noTeams: 'Keine Teams vorhanden.',
+  stats: {
+    totalShots: 'Shots gesamt',
+    reconnecting: 'Verbinde neu …',
   },
 
   actions: {
@@ -28,15 +25,19 @@ export default {
     cancel: 'Abbrechen',
     confirm: 'Bestätigen',
     close: 'Schliessen',
-    addShot: 'Treffer hinzufügen',
-    removeShot: 'Treffer entfernen',
+    addShot: 'Shot hinzufügen',
+    removeShot: 'Shot entfernen',
     editTeamName: 'Teamname bearbeiten',
-    deleteTeam: 'Team {name} löschen',
+    rename: 'Umbenennen',
+    delete: 'Löschen',
+    teamOptions: 'Optionen für {name}',
+    join: 'Mitmachen',
+    newRound: 'Neue Runde',
   },
 
   addDialog: {
-    title: 'Team Name eingeben',
-    label: 'Teamname eingeben',
+    title: 'Team hinzufügen',
+    label: 'Teamname',
   },
 
   deleteDialog: {
@@ -44,9 +45,27 @@ export default {
     text: 'Möchtest du das Team {name} wirklich löschen?',
   },
 
+  resetDialog: {
+    title: 'Neue Runde starten?',
+    text: 'Alle Zähler gehen zurück auf 0. Die Teams bleiben bestehen.',
+  },
+
+  joinDialog: {
+    title: 'Auf dem Handy mitmachen',
+    scanHint: 'Mit demselben WLAN verbinden, dann scannen:',
+    note: 'Alle im Netzwerk können mitzählen — ohne Login.',
+    unavailable: 'Keine Netzwerkadresse gefunden. Stelle sicher, dass dieses Gerät mit einem WLAN oder LAN verbunden ist.',
+  },
+
+  empty: {
+    title: 'Noch keine Teams',
+    hint: 'Füge das erste Team hinzu und starte die Runde.',
+  },
+
   feedback: {
     teamAdded: 'Team hinzugefügt.',
     teamDeleted: 'Team gelöscht.',
+    roundReset: 'Zähler zurückgesetzt.',
     nameRequired: 'Bitte einen Teamnamen eingeben.',
     nameEmpty: 'Teamname darf nicht leer sein.',
     loadFailed: 'Fehler beim Laden der Teams.',
@@ -54,5 +73,6 @@ export default {
     deleteFailed: 'Fehler beim Löschen des Teams.',
     counterFailed: 'Fehler beim Aktualisieren des Zählers.',
     renameFailed: 'Fehler beim Speichern des Teamnamens.',
+    resetFailed: 'Fehler beim Zurücksetzen der Zähler.',
   },
 };

@@ -22,8 +22,8 @@ function renderSplash({ heading, message, spinner }) {
   html, body {
     margin: 0;
     height: 100%;
-    background: #121212;
-    color: rgba(255, 255, 255, 0.87);
+    background: #0e0b08;
+    color: #f6eedc;
     font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
     overflow: hidden;
   }
@@ -38,19 +38,19 @@ function renderSplash({ heading, message, spinner }) {
   .spinner {
     width: 48px;
     height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.12);
-    border-top-color: #2196f3;
+    border: 4px solid rgba(246, 238, 220, 0.15);
+    border-top-color: #ffb627;
     border-radius: 50%;
     animation: spin 0.9s linear infinite;
   }
   .title {
     font-size: 22px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
   }
   .subtitle {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(246, 238, 220, 0.55);
     margin-top: -18px;
   }
   .subtitle--pulse {
@@ -75,7 +75,9 @@ function loadHtml(html) {
 }
 
 function startServer() {
-  process.env.DB_PATH = path.join(app.getPath('userData'), 'shot_counter.db');
+  // Default to the per-user app data dir; an explicitly set DB_PATH wins so
+  // the packaged stack can be driven against a throwaway database.
+  process.env.DB_PATH = process.env.DB_PATH ?? path.join(app.getPath('userData'), 'shot_counter.db');
   if (!isDev) {
     process.env.SERVE_STATIC = path.join(__dirname, 'dist');
     process.env.FRONTEND_ORIGIN = `http://localhost:${process.env.PORT ?? 5000}`;
@@ -90,7 +92,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'Shot-Counter',
-    backgroundColor: '#121212',
+    backgroundColor: '#0e0b08',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -100,7 +102,7 @@ function createWindow() {
   Menu.setApplicationMenu(null);
 
   loadHtml(renderSplash({
-    heading: 'Shot-Counter',
+    heading: 'SHOT-COUNTER',
     message: 'Starting …',
     spinner: true,
   }));
