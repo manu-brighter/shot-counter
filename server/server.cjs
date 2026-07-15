@@ -176,6 +176,25 @@ app.post('/api/teams/:id/decrement', (req, res) => {
   }
 });
 
+// Absolute counter set — for "add 20 at once" corrections from the UI.
+app.put('/api/teams/:id/counter', (req, res) => {
+  const { id } = req.params;
+  const counter = Number(req.body?.counter);
+  if (!Number.isInteger(counter) || counter < 0 || counter > 1000000) {
+    return res.status(400).json({ error: 'Counter must be an integer between 0 and 1000000' });
+  }
+  try {
+    const result = db.prepare('UPDATE teams SET counter = ? WHERE id = ?').run(counter, id);
+    if (result.changes === 0) return res.status(404).json({ error: 'Team not found' });
+    const team = db.prepare('SELECT id, name, counter FROM teams WHERE id = ?').get(id);
+    broadcastTeams();
+    res.json(team);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // New round: keep the teams, zero every counter.
 app.post('/api/teams/reset', (_req, res) => {
   try {
