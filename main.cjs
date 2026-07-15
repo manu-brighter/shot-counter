@@ -111,10 +111,15 @@ function createWindow() {
   });
 
   // No application menu means no default F11 accelerator — restore it.
+  // F11 drives the same HTML fullscreen the header button uses, so the
+  // button's icon state stays in sync no matter which way was toggled.
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') {
       event.preventDefault();
-      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+      mainWindow.webContents.executeJavaScript(
+        'document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()',
+        true,
+      ).catch(() => {});
     }
   });
 

@@ -44,9 +44,9 @@ This produces two very different runtime shapes:
 | `electron:dev` | Vite `:3000` | `:5000` | cross-origin, enforced |
 | packaged app | Express `:5000` | `:5000` | same-origin, not enforced |
 
-`src/pages/index.vue` therefore sets `API_BASE` to `''` in production (relative, same-origin) and `http://localhost:5000` only in dev. **Do not hardcode the port into the frontend** — that coupling was deliberately removed.
+`src/composables/useTeams.js` therefore sets `API_BASE` to `''` in production (relative, same-origin) and `http://localhost:5000` only in dev; a `VITE_API_BASE_URL` env var overrides both. **Do not hardcode the port into the frontend** — that coupling was deliberately removed.
 
-Because of this split, **anything CSP-, CORS-, or static-serving-related is invisible in `electron:dev`** and only appears in the packaged build. Test those against `npx electron .`, not the dev server.
+Because of this split, **anything CSP-, CORS-, or static-serving-related is invisible in `electron:dev`** and only appears in the packaged build. Test those against `npx electron .`, not the dev server. The QR join dialog is also a prod-shape feature: in `electron:dev` it points phones at `http://<ip>:5000`, which serves no SPA there (`SERVE_STATIC` unset).
 
 ### Module systems
 

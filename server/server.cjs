@@ -109,7 +109,7 @@ app.post('/api/teams', (req, res) => {
     return res.status(400).json({ error: 'Name is required and must be at most 100 characters' });
   }
   try {
-    db.prepare('INSERT INTO teams (name, counter) VALUES (?, 0)').run(name);
+    db.prepare('INSERT INTO teams (name, counter) VALUES (?, 0)').run(name.trim());
     broadcastTeams();
     res.status(201).json({ message: 'Team added successfully' });
   } catch (err) {
@@ -125,7 +125,7 @@ app.put('/api/teams/:id', (req, res) => {
     return res.status(400).json({ error: 'Name is required and must be at most 100 characters' });
   }
   try {
-    const result = db.prepare('UPDATE teams SET name = ? WHERE id = ?').run(name, id);
+    const result = db.prepare('UPDATE teams SET name = ? WHERE id = ?').run(name.trim(), id);
     if (result.changes === 0) return res.status(404).json({ error: 'Team not found' });
     broadcastTeams();
     res.json({ message: 'Team updated successfully' });

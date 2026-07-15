@@ -25,6 +25,9 @@ async function request(path, options) {
 export function useTeams() {
   const teams = ref([]);
   const loading = ref(true);
+  // True once any team list arrived. Distinguishes "the board is empty" from
+  // "the server was never reachable" — those need different empty screens.
+  const loaded = ref(false);
   // False while the SSE stream is down — the UI shows a "reconnecting" hint,
   // because a party app that silently stops syncing is worse than one that
   // says so.
@@ -39,6 +42,7 @@ export function useTeams() {
   const fetchTeams = async () => {
     try {
       teams.value = await request('/api/teams');
+      loaded.value = true;
     } finally {
       loading.value = false;
     }
@@ -103,6 +107,7 @@ export function useTeams() {
     eventSource = new EventSource(`${API_BASE}/api/events`);
     eventSource.addEventListener('teams', (event) => {
       teams.value = JSON.parse(event.data);
+      loaded.value = true;
       loading.value = false;
     });
     eventSource.onopen = () => (connected.value = true);
@@ -141,6 +146,7 @@ export function useTeams() {
     rankedTeams,
     totalShots,
     loading,
+    loaded,
     connected,
     fetchTeams,
     addTeam,

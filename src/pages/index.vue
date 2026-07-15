@@ -61,6 +61,7 @@
           </v-btn>
 
           <v-btn
+            v-if="fullscreenSupported"
             variant="tonal"
             icon
             class="topbar__icon-btn"
@@ -183,6 +184,24 @@
           />
         </li>
       </TransitionGroup>
+
+      <div
+        v-else-if="!loaded"
+        class="board__unreachable"
+      >
+        <v-icon
+          size="40"
+          class="board__unreachable-icon"
+        >
+          $wifiOff
+        </v-icon>
+        <p class="board__unreachable-title">
+          {{ t('feedback.loadFailed') }}
+        </p>
+        <p class="board__unreachable-hint">
+          {{ t('stats.reconnecting') }}
+        </p>
+      </div>
 
       <div
         v-else
@@ -421,6 +440,7 @@ const {
   rankedTeams,
   totalShots,
   loading,
+  loaded,
   connected,
   fetchTeams,
   addTeam,
@@ -459,6 +479,8 @@ const { density, boardStyle } = useBoardDensity(smallScreen);
 
 // Fullscreen via the HTML API, so it works in the desktop app and in every
 // browser on the LAN alike. Electron additionally maps F11 (main.cjs).
+// Hidden where the API doesn't exist (iPhone Safari).
+const fullscreenSupported = document.fullscreenEnabled ?? false;
 const isFullscreen = ref(false);
 const onFullscreenChange = () => (isFullscreen.value = Boolean(document.fullscreenElement));
 
@@ -479,14 +501,15 @@ const toggleFullscreen = () => {
 };
 
 const addNewTeam = async () => {
-  if (!newTeam.value.name.trim()) {
+  const name = newTeam.value.name.trim();
+  if (!name) {
     showSnackbar(t('feedback.nameRequired'), 'error');
     return;
   }
   if (submitting.value) return;
   submitting.value = true;
   try {
-    await addTeam(newTeam.value.name);
+    await addTeam(name);
     closeDialog();
     await fetchTeams();
     showSnackbar(t('feedback.teamAdded'));
@@ -579,6 +602,12 @@ watch(addTeamDialog, (val) => {
 
 watch(confirmDeleteDialog, (val) => {
   if (!val) pendingDeleteId.value = null;
+});
+
+// Another device may delete the team while our confirm dialog is open — the
+// dialog would then show an empty name and confirm into a 404.
+watch(pendingDeleteTeam, (team) => {
+  if (confirmDeleteDialog.value && !team) cancelDelete();
 });
 
 // Gold confetti when the lead changes hands. Guarded so deletions and
@@ -863,6 +892,35 @@ $bubbles: (
   display: flex;
   justify-content: center;
   padding: 80px 0;
+}
+
+/* Server unreachable — distinct from an empty board */
+.board__unreachable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 16px;
+  text-align: center;
+}
+
+.board__unreachable-icon {
+  color: var(--sc-faded);
+  opacity: 0.8;
+}
+
+.board__unreachable-title {
+  margin: 0;
+  font-family: var(--sc-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sc-cream);
+}
+
+.board__unreachable-hint {
+  margin: 0;
+  color: var(--sc-faded);
 }
 
 .board__list {
