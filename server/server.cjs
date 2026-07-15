@@ -31,15 +31,26 @@ const teamsSnapshot = () => db.prepare('SELECT id, name, counter FROM teams ORDE
 // clients, so phones and the main screen stay in step without reloading.
 const sseClients = new Set();
 
+// A phone that vanishes mid-stream (Wi-Fi drop, lock screen) can leave a dead
+// response behind until its 'close' fires; writing to it must never take the
+// server down mid-party.
+function sendToClient(client, payload) {
+  try {
+    client.write(payload);
+  } catch {
+    sseClients.delete(client);
+  }
+}
+
 function broadcastTeams() {
   if (sseClients.size === 0) return;
   const payload = `event: teams\ndata: ${JSON.stringify(teamsSnapshot())}\n\n`;
-  for (const client of sseClients) client.write(payload);
+  for (const client of sseClients) sendToClient(client, payload);
 }
 
 // Keep-alive comment so proxies and sleeping phones don't drop idle streams.
 const heartbeat = setInterval(() => {
-  for (const client of sseClients) client.write(': ping\n\n');
+  for (const client of sseClients) sendToClient(client, ': ping\n\n');
 }, 25000);
 heartbeat.unref();
 
@@ -53,6 +64,7 @@ app.get('/api/events', (req, res) => {
   res.write(`event: teams\ndata: ${JSON.stringify(teamsSnapshot())}\n\n`);
   sseClients.add(res);
   req.on('close', () => sseClients.delete(res));
+  res.on('error', () => sseClients.delete(res));
 });
 
 // LAN addresses for the join dialog — lets phones scan a QR code instead of
