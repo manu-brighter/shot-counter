@@ -2,31 +2,44 @@
   "name": "shot-counter",
   "private": true,
   "type": "module",
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Shot-Counter — real-time multi-team shot counter (Vue 3 · Express 5 · SQLite), runs as a web app or standalone desktop build.",
+  "author": "Manuel Heller",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manu-brighter/shot-counter.git"
+  },
+  "main": "main.cjs",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "electron:dev": "concurrently --kill-others \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder install-app-deps && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "@mdi/font": "7.4.47",
-    "axios": "^1.7.9",
-    "roboto-fontface": "*",
-    "vue": "^3.4.31",
-    "vuetify": "^3.6.14"
+    "@fontsource/roboto": "^5.2.10",
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
+    "@mdi/js": "^7.4.47",
     "@vitejs/plugin-vue": "^5.0.5",
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
+    "electron": "^42.6.2",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.14.0",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-n": "^16.6.2",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.4.0",
     "eslint-plugin-vue": "^9.30.0",
-    "pinia": "^2.1.7",
-    "sass": "1.77.8",
     "sass-embedded": "^1.77.8",
     "unplugin-auto-import": "^0.17.6",
     "unplugin-fonts": "^1.1.1",
@@ -35,6 +48,74 @@
     "vite": "^5.4.0",
     "vite-plugin-vue-layouts": "^0.11.0",
     "vite-plugin-vuetify": "^2.0.3",
-    "vue-router": "^4.4.0"
+    "vue": "^3.4.31",
+    "vue-i18n": "^11.4.6",
+    "vue-router": "^4.4.0",
+    "vuetify": "^3.6.14",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "ch.manu-brighter.shot-counter",
+    "productName": "Shot-Counter",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "server/server.cjs",
+      "server/config.cjs",
+      "main.cjs"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "artifactName": "Shot-Counter-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Shot-Counter-Portable.${ext}"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "appImage": {
+      "artifactName": "Shot-Counter.${ext}"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "manu-brighter",
+        "repo": "shot-counter"
+      }
+    ]
   }
 }
