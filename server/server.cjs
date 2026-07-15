@@ -113,11 +113,6 @@ app.post('/api/teams/:id/decrement', (req, res) => {
   }
 });
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
 // SPA fallback — after API routes, only in production Electron mode
 if (process.env.SERVE_STATIC) {
   app.get(/.*/, (req, res, next) => {
@@ -125,6 +120,12 @@ if (process.env.SERVE_STATIC) {
     res.sendFile(path.join(process.env.SERVE_STATIC, 'index.html'));
   });
 }
+
+// Error handler last, so it also catches failures from the SPA fallback above.
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 const serverReady = new Promise((resolve, reject) => {
   const server = app.listen(config.PORT, () => {

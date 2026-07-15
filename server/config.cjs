@@ -1,4 +1,10 @@
-try { require('dotenv').config(); } catch (_) {}
+// dotenv is optional — it isn't bundled into the packaged desktop build, where
+// every value below is supplied by main.cjs or falls back to its default.
+try {
+  require('dotenv').config();
+} catch {
+  // No .env support available.
+}
 
 const path = require('path');
 

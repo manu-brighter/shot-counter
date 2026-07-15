@@ -12,6 +12,12 @@ on:
 permissions:
   contents: write # electron-builder needs this to create the release + upload assets
 
+# max-parallel below only serialises the matrix within one run; this stops two
+# runs (e.g. a re-pushed tag) from publishing into the same release at once.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     strategy:
@@ -34,6 +40,20 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      # electron-builder names the release after package.json, not the tag —
+      # without this a forgotten version bump silently produces a mislabelled
+      # release.
+      - name: Verify tag matches package.json version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
 
       # postinstall runs `electron-builder install-app-deps`, which pulls the
       # prebuilt better-sqlite3 binary for this runner's platform (Electron 42 /
