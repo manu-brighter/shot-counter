@@ -2,7 +2,7 @@
   "name": "shot-counter",
   "private": true,
   "type": "module",
-  "version": "0.1.0-beta.1",
+  "version": "1.0.0",
   "description": "Shot-Counter — real-time multi-team shot counter (Vue 3 · Express 5 · SQLite), runs as a web app or standalone desktop build.",
   "author": "Manuel Heller",
   "repository": {
