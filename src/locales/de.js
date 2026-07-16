@@ -30,6 +30,7 @@ export default {
     editTeamName: 'Teamname bearbeiten',
     rename: 'Umbenennen',
     delete: 'Löschen',
+    deleteAll: 'Alle Teams löschen',
     teamOptions: 'Optionen für {name}',
     join: 'Mitmachen',
     newRound: 'Neue Runde',
@@ -52,6 +53,11 @@ export default {
     text: 'Möchtest du das Team {name} wirklich löschen?',
   },
 
+  deleteAllDialog: {
+    title: 'Alle Teams löschen?',
+    text: 'Alle Teams und ihre Shots werden endgültig entfernt. Das lässt sich nicht rückgängig machen.',
+  },
+
   resetDialog: {
     title: 'Neue Runde starten?',
     text: 'Alle Zähler gehen zurück auf 0. Die Teams bleiben bestehen.',
@@ -72,12 +78,14 @@ export default {
   feedback: {
     teamAdded: 'Team hinzugefügt.',
     teamDeleted: 'Team gelöscht.',
+    allTeamsDeleted: 'Alle Teams gelöscht.',
     roundReset: 'Zähler zurückgesetzt.',
     nameRequired: 'Bitte einen Teamnamen eingeben.',
     nameEmpty: 'Teamname darf nicht leer sein.',
     loadFailed: 'Fehler beim Laden der Teams.',
     addFailed: 'Fehler beim Hinzufügen des Teams.',
     deleteFailed: 'Fehler beim Löschen des Teams.',
+    deleteAllFailed: 'Fehler beim Löschen aller Teams.',
     counterFailed: 'Fehler beim Aktualisieren des Zählers.',
     renameFailed: 'Fehler beim Speichern des Teamnamens.',
     resetFailed: 'Fehler beim Zurücksetzen der Zähler.',

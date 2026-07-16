@@ -61,6 +61,19 @@
           </v-btn>
 
           <v-btn
+            variant="tonal"
+            color="error"
+            icon
+            class="topbar__icon-btn"
+            :disabled="!rankedTeams.length"
+            :aria-label="t('actions.deleteAll')"
+            :title="t('actions.deleteAll')"
+            @click="deleteAllDialog = true"
+          >
+            <v-icon>$deleteSweep</v-icon>
+          </v-btn>
+
+          <v-btn
             v-if="fullscreenSupported"
             variant="tonal"
             icon
@@ -399,6 +412,34 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog
+      v-model="deleteAllDialog"
+      max-width="400"
+    >
+      <v-card class="sc-dialog-card">
+        <v-card-title>{{ t('deleteAllDialog.title') }}</v-card-title>
+        <v-card-text>
+          {{ t('deleteAllDialog.text') }}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="deleteAllDialog = false"
+          >
+            {{ t('actions.cancel') }}
+          </v-btn>
+          <v-btn
+            color="error"
+            variant="flat"
+            @click="confirmDeleteAll"
+          >
+            {{ t('actions.confirm') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <JoinDialog v-model="joinDialog" />
 
     <v-snackbar
@@ -446,6 +487,7 @@ const {
   addTeam,
   renameTeam,
   deleteTeam,
+  deleteAllTeams,
   resetCounters,
   adjustCounter,
   setCounter,
@@ -453,6 +495,7 @@ const {
 
 const addTeamDialog = ref(false);
 const confirmDeleteDialog = ref(false);
+const deleteAllDialog = ref(false);
 const resetDialog = ref(false);
 const joinDialog = ref(false);
 const newTeam = ref({ name: '' });
@@ -587,6 +630,18 @@ const confirmReset = async () => {
   } catch (err) {
     console.error('Error resetting counters:', err);
     showSnackbar(t('feedback.resetFailed'), 'error');
+  }
+};
+
+const confirmDeleteAll = async () => {
+  deleteAllDialog.value = false;
+  try {
+    await deleteAllTeams();
+    await fetchTeams();
+    showSnackbar(t('feedback.allTeamsDeleted'));
+  } catch (err) {
+    console.error('Error deleting all teams:', err);
+    showSnackbar(t('feedback.deleteAllFailed'), 'error');
   }
 };
 

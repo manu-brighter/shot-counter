@@ -207,6 +207,19 @@ app.post('/api/teams/reset', (_req, res) => {
   }
 });
 
+// Clear the board: remove every team and its counter. Distinct from reset,
+// which keeps the teams.
+app.delete('/api/teams', (_req, res) => {
+  try {
+    db.prepare('DELETE FROM teams').run();
+    broadcastTeams();
+    res.json({ message: 'All teams deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // SPA fallback — after API routes, only in production Electron mode
 if (process.env.SERVE_STATIC) {
   app.get(/.*/, (req, res, next) => {
