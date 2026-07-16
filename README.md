@@ -22,9 +22,9 @@ A real-time multi-team shot counter for parties, birthdays, festivals and game n
 
 <div align="center">
 
-## ⬇ Download & run
+## ⬇ Download & install
 
-**No install of Node, a database, or anything else — just grab the file and start it.**
+**No Node, no database, no GitHub account, nothing to set up — download one file and open it.**
 
 [![Download Windows Installer](https://img.shields.io/badge/Windows-Installer%20(.exe)-2196f3?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0a0a)](https://github.com/manu-brighter/shot-counter/releases/latest/download/Shot-Counter-Setup.exe)
 &nbsp;
@@ -32,13 +32,37 @@ A real-time multi-team shot counter for parties, birthdays, festivals and game n
 &nbsp;
 [![Download Linux AppImage](https://img.shields.io/badge/Linux-AppImage-b8860b?style=for-the-badge&logo=linux&logoColor=white&labelColor=0a0a0a)](https://github.com/manu-brighter/shot-counter/releases/latest/download/Shot-Counter.AppImage)
 
-<sub>These links always point at the newest [release](https://github.com/manu-brighter/shot-counter/releases/latest).</sub>
+<sub>These buttons always download the newest [release](https://github.com/manu-brighter/shot-counter/releases/latest). Not sure which one? Take the **Windows Installer**.</sub>
 
 </div>
 
-> **Windows:** the app isn't code-signed, so SmartScreen may warn on first launch — click **More info → Run anyway**. Prefer the **Installer** (starts in < 1 s); the portable re-extracts ~100 MB on every launch (20–30 s).
-> **Linux:** make it executable, then run it — `chmod +x Shot-Counter.AppImage && ./Shot-Counter.AppImage`.
-> **Firewall:** Windows will ask for network permission on first launch. That's expected — see [Playing on multiple devices](#-playing-on-multiple-devices). Allow it for **private networks** only. Nothing ever leaves for the internet, and denying the prompt still leaves the app fully working on the machine itself.
+### 🪟 Windows — step by step
+
+1. **Click the blue _Windows Installer_ button above.** A file named `Shot-Counter-Setup.exe` downloads to your **Downloads** folder. If your browser warns that the file "could harm your device", choose **Keep** — it's a normal program, the browser just doesn't recognise it yet.
+2. **Double-click `Shot-Counter-Setup.exe`** to start the installer.
+3. If a blue **"Windows protected your PC"** box appears, click **More info**, then the **Run anyway** button. This shows up because the app isn't code-signed (a paid certificate this free project skips) — not because anything is wrong. The full source is public right here in this repo.
+4. Let the installer finish. Shot-Counter opens on its own and adds a desktop shortcut for next time.
+5. The first time it starts, Windows asks whether the app may use your network. Tick **Private networks** and click **Allow** — that's what lets phones join over Wi-Fi. Only using this one screen? Clicking Cancel is fine too; the app still works.
+
+You're on the board. To bring in friends' phones, see [Playing on multiple devices](#-playing-on-multiple-devices).
+
+> **Installer or Portable?** The **Installer** is the easy pick: it sets up once and opens in under a second. The **Portable** `.exe` needs no installation (handy on a USB stick) but unpacks itself on every start, so it takes 20–30 seconds each time.
+
+<details>
+<summary>🐧 <b>Linux</b> (AppImage) — click to expand</summary>
+
+<br>
+
+Download the **Linux AppImage** button above, then make it executable and run it:
+
+```bash
+chmod +x Shot-Counter.AppImage
+./Shot-Counter.AppImage
+```
+
+On first launch your firewall may ask for network permission — allow it on your private/home network so phones can join over Wi-Fi.
+
+</details>
 
 <br>
 
@@ -59,7 +83,7 @@ Concurrent button presses from multiple devices don't race. The backend uses `UP
 `better-sqlite3` runs in-process against a single file — no DB server to install or keep alive. Its synchronous API means no connection pool and no async gap between read and write. The desktop build stores the file in `%APPDATA%\Shot-Counter\`.
 
 **A scoreboard, not a data table**
-The UI is built like a late-night bar scoreboard: warm near-black with a subtly animated backdrop, amber accents, condensed display type (Anton) for the digits, and gold/silver/bronze medals for the top three — which only appear once a team has actually scored. A card-size slider compacts the board down to ~30 teams on one screen, big displays (beamer!) scale it up, fullscreen is one click away, and clicking any number lets you type a count directly. Fonts are self-hosted (`@fontsource`), so the design works fully offline.
+The UI is built like a late-night bar scoreboard: warm near-black with a subtly animated backdrop, amber accents, condensed display type (Anton) for the digits, and gold/silver/bronze medals for the top three — which only appear once a team has actually scored. A card-size slider compacts the board down to ~30 teams on one screen, big displays (beamer!) scale it up, fullscreen is one click away, clicking any number lets you type a count directly, and clearing the whole board for the next party is one tap behind a confirm. Fonts are self-hosted (`@fontsource`), so the design works fully offline.
 
 **Zero webfont overhead for icons**
 All icons are inlined as SVG paths from `@mdi/js` — no 350 KB `@mdi/font` webfont in the bundle.
@@ -205,6 +229,7 @@ The workflow creates a **draft** release — review the attached artifacts on th
 | `POST` | `/api/teams/:id/increment` | — | Atomic counter +1 |
 | `POST` | `/api/teams/:id/decrement` | — | Atomic counter −1 (floor 0) |
 | `PUT` | `/api/teams/:id/counter` | `{ counter }` | Set a counter to an absolute value |
+| `DELETE` | `/api/teams` | — | Delete **all** teams — clears the whole board |
 | `POST` | `/api/teams/reset` | — | New round — reset every counter to 0 |
 
 All responses are JSON (the SSE stream sends JSON `teams` events). Errors return `{ error }` with appropriate HTTP status codes (`400` validation, `404` not found, `500` server error).
