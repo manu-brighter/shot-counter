@@ -24,7 +24,8 @@ function initialDensity() {
   } catch {
     // Storage blocked — fall through to the default.
   }
-  return 1;
+  // No stored preference yet — start mid-slider, a balanced default size.
+  return 0.5;
 }
 
 export function useBoardDensity(smallScreen) {

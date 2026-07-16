@@ -62,6 +62,8 @@ export function useTeams() {
 
   const deleteTeam = (id) => request(`/api/teams/${id}`, { method: 'DELETE' });
 
+  const deleteAllTeams = () => request('/api/teams', { method: 'DELETE' });
+
   const resetCounters = () => request('/api/teams/reset', { method: 'POST' });
 
   // Optimistic counter change: bump immediately so the odometer reacts on the
@@ -152,6 +154,7 @@ export function useTeams() {
     addTeam,
     renameTeam,
     deleteTeam,
+    deleteAllTeams,
     resetCounters,
     adjustCounter,
     setCounter,
