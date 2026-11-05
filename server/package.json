@@ -4,23 +4,32 @@
   "description": "Backend server for the Shot Counter app",
   "main": "server.cjs",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13.0",
+    "npm": ">=11.19.0"
   },
   "scripts": {
     "start": "node server.cjs",
     "dev": "nodemon server.cjs"
   },
   "dependencies": {
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "helmet": "^8.2.0"
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "helmet": "^8.3.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.14"
   },
   "author": "",
   "license": "MIT",
-  "keywords": []
+  "keywords": [],
+  "overrides": {
+    "nodemon": {
+      "minimatch": "^11.0.4"
+    }
+  },
+  "allowScripts": {
+    "better-sqlite3": false
+  }
 }

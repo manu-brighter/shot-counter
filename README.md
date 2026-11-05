@@ -2,13 +2,13 @@
 
 <div align="center">
 
-![Vue](https://img.shields.io/badge/Vue-3.4-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white&labelColor=0a0a0a)&nbsp;
-![Vuetify](https://img.shields.io/badge/Vuetify-3.6-1867C0?style=for-the-badge&logo=vuetify&logoColor=white&labelColor=0a0a0a)&nbsp;
-![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white&labelColor=0a0a0a)&nbsp;
-![Express](https://img.shields.io/badge/Express-5.0-f5f5f5?style=for-the-badge&logo=express&logoColor=0a0a0a&labelColor=0a0a0a)&nbsp;
+![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white&labelColor=0a0a0a)&nbsp;
+![Vuetify](https://img.shields.io/badge/Vuetify-4.3-1867C0?style=for-the-badge&logo=vuetify&logoColor=white&labelColor=0a0a0a)&nbsp;
+![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?style=for-the-badge&logo=vite&logoColor=white&labelColor=0a0a0a)&nbsp;
+![Express](https://img.shields.io/badge/Express-5.3-f5f5f5?style=for-the-badge&logo=express&logoColor=0a0a0a&labelColor=0a0a0a)&nbsp;
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?style=for-the-badge&logo=sqlite&logoColor=white&labelColor=0a0a0a)&nbsp;
-![Electron](https://img.shields.io/badge/Electron-42-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)&nbsp;
-![Node](https://img.shields.io/badge/Node.js-%E2%89%A520-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0a0a0a)
+![Electron](https://img.shields.io/badge/Electron-45-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)&nbsp;
+![Node](https://img.shields.io/badge/Node.js-24_LTS-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0a0a0a)
 
 </div>
 
@@ -64,6 +64,10 @@ On first launch your firewall may ask for network permission — allow it on you
 
 </details>
 
+Current release: **[v1.2.0](https://github.com/manu-brighter/shot-counter/releases/tag/v1.2.0)** · [Changelog](CHANGELOG.md).
+
+This project is maintained on demand. Dependabot alerts and automatic security updates are disabled; dependencies are reviewed manually before future releases.
+
 <br>
 
 ---
@@ -113,14 +117,14 @@ The upside is the LAN party mode. Allow the prompt for private networks, hit **J
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Vue 3.4 · Vuetify 3.6 · Vite 5.4 |
+| **Frontend** | Vue 3.5 · Vuetify 4.3 · Vite 8.3 |
 | **Live sync** | Server-Sent Events (`EventSource`) + polling fallback |
 | **Icons** | `@mdi/js` SVG paths (no webfont) |
 | **QR & confetti** | `uqr` (offline SVG QR) · `canvas-confetti` |
 | **i18n** | vue-i18n 11 · English (default) + German, shared with Vuetify's locale |
-| **Backend** | Node.js ≥20 · Express 5.0 |
-| **Database** | SQLite · better-sqlite3 12 (embedded, single file) |
-| **Desktop** | Electron 42 · packaged with electron-builder (Windows NSIS + portable, Linux AppImage) |
+| **Backend** | Node.js 22.18+/24.11+ · Express 5.3 (Node 24 recommended) |
+| **Database** | SQLite · better-sqlite3 13 (embedded, single file) |
+| **Desktop** | Electron 45 · packaged with electron-builder (Windows NSIS + portable, Linux AppImage) |
 | **Security** | helmet · CORS restricted to `FRONTEND_ORIGIN` · dotenv config |
 | **Fonts** | Self-hosted Anton (display) + Barlow (UI) via `@fontsource` |
 
@@ -131,6 +135,8 @@ The upside is the LAN party mode. Allow the prompt for private networks, hit **J
 ---
 
 ## ✦ Setup
+
+Use **Node.js 24 LTS** (`.nvmrc`); supported versions are **Node 22.18+ or 24.11+**, with **npm 11.19+**.
 
 ### 1 — Install dependencies
 
@@ -203,13 +209,13 @@ electron-builder can't cross-build Linux from Windows, so releases run in CI. Th
 
 ```bash
 # bump "version" in package.json first, then:
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 The workflow creates a **draft** release — review the attached artifacts on the Releases page, then hit **Publish**. The download links at the top of this README always resolve to the newest published release.
 
-> **Native module note:** Electron is pinned to **42.x** on purpose. `better-sqlite3` runs in-process and must match the Electron ABI (v146); prebuilt binaries exist for that ABI on Windows & Linux, so no C++ compiler is needed to build — locally or in CI. Bumping to Electron 43+ would require either newer prebuilds or a full build toolchain.
+> **Native module note:** `better-sqlite3` 13 bundles N-API prebuilt binaries for Windows and Linux, shared across compatible Node.js and Electron versions. The npm `allowScripts` policy disables an unnecessary SQLite rebuild and the root postinstall explicitly downloads Electron. Separate installs in the root and `server/` are still needed for the desktop and standalone server dependency trees.
 
 <br>
 
@@ -250,7 +256,7 @@ src/styles/app.scss               Design tokens + overrides for teleported Vueti
 src/locales/en.js                 English messages (default) — incl. Vuetify's $vuetify strings
 src/locales/de.js                 German messages — keys mirror en.js exactly
 src/plugins/i18n.js               vue-i18n setup — default locale, localStorage, <html lang>
-src/plugins/vuetify.js            Vuetify 3 config — scoreboard theme, SVG icons, locale adapter
+src/plugins/vuetify.js            Vuetify 4 config — scoreboard theme, SVG icons, locale adapter
 server/server.cjs                 Express 5 API — SQLite, routes, atomic counters, SSE broadcast
 server/config.cjs                 All env vars with dotenv + ?? fallbacks
 server/.env.example               Environment variable reference
