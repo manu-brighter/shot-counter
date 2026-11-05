@@ -698,6 +698,7 @@ watch(() => rankedTeams.value[0]?.id, (newId, oldId) => {
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:list';
 .shell {
   position: relative;
   display: flex;
@@ -815,17 +816,17 @@ $bubbles: (
   (47%, 4px, 41s, -23s, -14px, 0.11),
 );
 
-@for $i from 1 through length($bubbles) {
-  $b: nth($bubbles, $i);
+@for $i from 1 through list.length($bubbles) {
+  $b: list.nth($bubbles, $i);
 
   .bubbles span:nth-child(#{$i}) {
-    left: nth($b, 1);
-    width: nth($b, 2);
-    height: nth($b, 2);
-    animation-duration: nth($b, 3);
-    animation-delay: nth($b, 4);
-    --bubble-sway: #{nth($b, 5)};
-    --bubble-o: #{nth($b, 6)};
+    left: list.nth($b, 1);
+    width: list.nth($b, 2);
+    height: list.nth($b, 2);
+    animation-duration: list.nth($b, 3);
+    animation-delay: list.nth($b, 4);
+    --bubble-sway: #{list.nth($b, 5)};
+    --bubble-o: #{list.nth($b, 6)};
   }
 }
 

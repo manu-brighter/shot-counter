@@ -10,7 +10,13 @@ export default [
 
   {
     name: 'app/files-to-ignore',
-    ignores: ['**/dist/**', '**/dist-ssr/**', '**/dist-electron/**', '**/coverage/**'],
+    ignores: ['**/dist/**', '**/dist-ssr/**', '**/dist-electron/**', '**/coverage/**', '**/.rework/**'],
+  },
+
+  {
+    name: 'app/browser',
+    files: ['src/**/*.{js,vue}'],
+    languageOptions: { globals: globals.browser },
   },
 
   js.configs.recommended,

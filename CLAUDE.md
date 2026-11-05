@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm install            # root: postinstall runs `electron-builder install-app-deps`
+npm install            # root: bundled N-API SQLite prebuilds, no rebuild needed
 npm run dev            # Vite dev server on :3000 (frontend only — no API)
 npm run electron:dev   # Vite + Electron together; this is the normal dev loop
 npm run build          # vite build -> dist/
@@ -15,19 +15,9 @@ npm run electron:build # package for the CURRENT OS -> dist-electron/
 
 There is **no test framework** in this project — no vitest/jest/cypress, no `npm test`. Do not claim a change is verified because it builds. Verification means running the app and driving the affected flow (see "Verifying a change" below).
 
-## The two better-sqlite3 installs (read this before debugging any DB error)
+## Native SQLite dependencies
 
-`better-sqlite3` is a native module and is installed **twice, against two different ABIs**:
-
-| Location | Built for | Used by |
-|---|---|---|
-| `node_modules/` (root) | **Electron ABI v146** — root `postinstall` runs `electron-builder install-app-deps` | the Electron app, `electron:build` |
-| `server/node_modules/` | **Node ABI** — plain `cd server && npm install` | running the API standalone for web/dev |
-
-Consequences:
-
-- **`node server/server.cjs` from the repo root fails** with `NODE_MODULE_VERSION 146 ... requires NODE_MODULE_VERSION <n>`. This is not a broken environment. It resolves the root (Electron-ABI) binary. To run the server under plain Node, `cd server && npm install` first, then `node server.cjs` from inside `server/`.
-- To exercise the production stack, run `npx electron .` instead — Electron has the matching ABI.
+`better-sqlite3` 13 uses N-API and bundles prebuilt binaries for Windows and Linux. The same prebuild works across compatible Node.js and Electron versions; there is no separate Electron ABI rebuild requirement. The root and `server/` still have separate dependency trees: run `npm install` in both when using the standalone server. Use Node.js 24 LTS (`.nvmrc`), supported Node versions are 22.18+ or 24.11+, with npm 11.19+. `allowScripts` disables unnecessary SQLite builds and the root postinstall explicitly downloads Electron.
 
 ## Architecture
 
@@ -76,7 +66,7 @@ The `Release` workflow (`.github/workflows/release.yml`) triggers **only on `v*.
 
 ## Constraints that look like bugs — do not "fix" these
 
-- **`"electron": "^42.6.2"` is pinned on purpose.** Electron 42 = ABI v146, for which `better-sqlite3` ships prebuilt binaries on Windows and Linux. Electron 43 = ABI v148 has no prebuilds, so bumping forces a source build and needs a full MSVC/C++ toolchain locally *and* in CI. Do not bump Electron without first confirming prebuilds exist for the new ABI.
+- **SQLite prebuilds must be checked when updating Electron or better-sqlite3.** Version 13 uses N-API with bundled Windows/Linux binaries. Verify both desktop builds in CI before publishing.
 - **`--publish never` in the workflow is correct.** electron-builder uploads artifacts in parallel and each upload independently resolves the target release; concurrent uploads all see "release doesn't exist" and each creates its own, scattering assets across duplicate drafts. This is a race *inside one* electron-builder invocation — `max-parallel`/`concurrency` cannot fix it. Only the separate `publish` job may create the release.
 - **Artifact names are version-less on purpose** (`Shot-Counter-Setup.exe`, not `Shot-Counter-1.0.0-Setup.exe`). The README links to `releases/latest/download/<name>`, which only works with stable names. Renaming an artifact breaks every README download button.
 - **The server binds all interfaces, not loopback.** `app.listen(PORT)` without a host is intentional — it is what lets phones on the same Wi-Fi join at `http://<ip>:5000`, and it is why Windows prompts for firewall permission on first launch. There is no auth; that trade-off is documented in the README and was chosen deliberately.
@@ -86,7 +76,7 @@ The `Release` workflow (`.github/workflows/release.yml`) triggers **only on `v*.
 
 ## Styling gotchas
 
-- **Vuetify's stylesheet loads *after* `src/styles/app.scss`** (module import order: `app.scss` in `main.js`, `vuetify/styles` inside `plugins/vuetify.js`). Equal-specificity overrides of Vuetify classes silently lose. Either use Vuetify SASS variables in `src/styles/settings.scss`, or win specificity explicitly (see the `.v-overlay .v-overlay__scrim` rule — the scrim is tinted with `on-surface`, which is *cream* in this theme, so without that override dialogs brighten the backdrop instead of darkening it).
+- **Vuetify 4 uses CSS cascade layers.** Unlayered application styles take priority over Vuetify styles. Global overlay overrides belong in `src/styles/app.scss`.
 - **Dialogs, menus and snackbars teleport to `<body>`**, outside every page component — scoped styles (even with `:deep`) can't reach them. Their overrides belong in `src/styles/app.scss` (`.sc-dialog-card`, `.sc-menu`).
 - The design tokens exist twice on purpose: as `--sc-*` CSS vars in `app.scss` for custom CSS, and as the `scoreboard` Vuetify theme in `plugins/vuetify.js` for component colors. Change both when touching the palette.
 
@@ -101,3 +91,9 @@ npm run build && npx electron .   # serves the prod bundle on :5000 with helmet
 **Set `DB_PATH` to a scratch file first** (PowerShell: `$env:DB_PATH = "$env:TEMP\shot_counter_test.db"`). Without it the packaged app opens the user's real database in `%APPDATA%\Shot-Counter\`, and exercising delete/reset flows destroys real party data. `main.cjs` respects a pre-set `DB_PATH` for exactly this purpose.
 
 Then exercise the flow — a browser pointed at `http://localhost:5000` hits the same server, same CSP and same bundle as the Electron window, which makes it usable for driving the UI. Multi-device live sync is testable with two browser tabs (SSE pushes to both). Check the console for errors; the app should produce none.
+
+## Maintenance
+
+Dependabot alerts and automatic security updates are disabled in GitHub repository settings. There is no Dependabot configuration file. Review dependencies manually when preparing a release, including `npm audit` in both the root and `server/`.
+
+The `minimatch` overrides in both manifests keep build/dev tooling on the patched 11.x implementation. Do not remove them until upstream dependency ranges include that fix. SQLite is denied install scripts because npm can otherwise synthesise an unnecessary `node-gyp rebuild`; its N-API prebuilds are loaded directly. Electron 45 has no package postinstall, so the root postinstall must run `install-electron`.

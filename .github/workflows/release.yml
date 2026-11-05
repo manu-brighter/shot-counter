@@ -35,11 +35,11 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       # electron-builder names the release after package.json, not the tag —
@@ -56,9 +56,9 @@ jobs:
             exit 1
           fi
 
-      # postinstall runs `electron-builder install-app-deps`, which pulls the
-      # prebuilt better-sqlite3 binary for this runner's platform (Electron 42 /
-      # ABI v146) — no C++ compiler needed.
+      - run: npm install --global npm@11.19.0
+
+      # better-sqlite3 13 bundles N-API prebuilds for Node and Electron.
       - run: npm ci
 
       - run: npm run build
@@ -69,7 +69,7 @@ jobs:
       # Only the files the README links to. The .blockmap and latest*.yml that
       # electron-builder emits are for electron-updater, which this app does
       # not use.
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}
           retention-days: 1
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
